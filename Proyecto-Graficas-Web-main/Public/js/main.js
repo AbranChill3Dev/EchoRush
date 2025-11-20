@@ -66,7 +66,7 @@ class MenuScene {
 
     _LoadAnimatedModel() {
         const loader = new FBXLoader();
-        loader.setPath('./Resources/Modelos/Personaje/');
+        loader.setPath('Resources/Modelos/Personaje/');
 
         // Carga el modelo principal
         loader.load('Tilin2.fbx', (model) => {

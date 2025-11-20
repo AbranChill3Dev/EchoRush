@@ -777,6 +777,10 @@ class CharacterControllerDemo {
             new THREE.Vector3(10, 5, -58)
         );
 
+        // --- MULTIJUGADOR: Variables nuevas ---
+        this._remotePlayers = {}; // Aquí guardaremos los modelos de los otros
+        this._socket = null;      // Aquí guardaremos la conexión
+
         this._isDead = false;
 
         this._Initialize();
@@ -965,6 +969,13 @@ class CharacterControllerDemo {
 
         document.getElementById('jugar-button').addEventListener('click', () => this._togglePause());
         document.getElementById('back-to-menu-button').addEventListener('click', () => this._exitToMenu());
+
+        // --- MULTIJUGADOR: Conectar si el usuario eligió ese modo ---
+        if (window.isMultiplayer) {
+            console.log("🔵 Iniciando modo Multijugador...");
+            this._socket = io(); // Conecta al servidor
+            this._setupSocketEvents(); // Configura qué hacer cuando recibimos datos
+        }
 
         this._RAF();
     }
@@ -1184,8 +1195,9 @@ class CharacterControllerDemo {
     }
 
     _Step(timeElapsed) {
-
         const timeElapsedS = timeElapsed * 0.001;
+
+        // 1. Actualizar animaciones (Jugador y Enemigo)
         if (this._mixers) {
             this._mixers.map(m => m.update(timeElapsedS));
         }
@@ -1194,40 +1206,55 @@ class CharacterControllerDemo {
             this._enemyMixer.update(timeElapsed * 0.001);
         }
 
-
+        // 2. Actualizar Lógica del Jugador
         if (this._controls) {
             this._controls.Update(timeElapsedS);
         }
 
-        // Llama al método de actualización del OrbSpawner
+        // 3. Actualizar Orbes
         if (this._orbSpawner) {
             this._orbSpawner.update(timeElapsedS);
         }
 
-        // --- *** ¡MODIFICACIÓN 4! *** CÓDIGO PARA ACTUALIZAR EL FUEGO ---
+        // 4. Actualizar Partículas de Fuego (Estático)
         if (this._fireSystem) {
-            // Actualiza la "física" de las partículas en su posición fija
             this._fireSystem.update(timeElapsedS);
         }
-        // --- FIN DEL CÓDIGO DE FUEGO ---
 
+        // 5. Actualizar Explosiones (y eliminar las que terminaron)
         for (let i = this._explosions.length - 1; i >= 0; i--) {
             const explosion = this._explosions[i];
-            const isDead = explosion.update(timeElapsedS); // El update devuelve 'true' si ya murió
+            const isDead = explosion.update(timeElapsedS);
             if (isDead) {
-                this._explosions.splice(i, 1); // Eliminarla del array
+                this._explosions.splice(i, 1);
             }
         }
 
-        // ====================================================================
-        // 2. LLAMADA AL CHEQUEO DE COLISIONES EN CADA FRAME (posición aquí)
-        // ====================================================================
-        this._CheckCollisions();
+        // 6. Chequeos de Juego
+        this._CheckCollisions();      // Recolección de orbes
+        this._CheckBossEncounter();   // Jefe final
+        this._UpdateCamera();         // Mover la cámara
 
-        this._CheckBossEncounter();
+        // 7. LÓGICA MULTIJUGADOR (CORREGIDA)
+        // Solo enviamos datos si estamos conectados y el jugador existe
+        if (this._socket && this._controls && this._controls._target) {
+            const pos = this._controls._target.position;
+            const rot = this._controls._target.quaternion;
 
-        // Llamada al método de actualización de la cámara
-        this._UpdateCamera();
+            // --- CORRECCIÓN: Definir la variable antes de usarla ---
+            // Obtenemos el nombre de la animación actual ('idle', 'walk', 'run')
+            // Usamos ?. por seguridad, por si _currentState es null momentáneamente
+            const currentAnim = this._controls._stateMachine._currentState?.Name || 'idle';
+
+            // Enviamos los datos al servidor
+            this._socket.emit('playerMovement', {
+                x: pos.x,
+                y: pos.y,
+                z: pos.z,
+                rotation: rot,
+                anim: currentAnim
+            });
+        }
     }
 
     //  API
@@ -1424,6 +1451,123 @@ class CharacterControllerDemo {
         };
 
         this._enemyMixer.addEventListener('finished', onFinish);
+    }
+
+    _setupSocketEvents() {
+        // 1. Cargar jugadores existentes
+        this._socket.on('currentPlayers', (players) => {
+            Object.keys(players).forEach((id) => {
+                if (id !== this._socket.id) {
+                    this._addRemotePlayer(id, players[id]);
+                }
+            });
+        });
+
+        // 2. Alguien nuevo entró
+        this._socket.on('newPlayer', (info) => {
+            this._addRemotePlayer(info.playerId, info.playerInfo);
+        });
+
+        // 3. Alguien se movió (AQUÍ ESTÁ LA CORRECCIÓN DE ANIMACIÓN)
+        this._socket.on('playerMoved', (info) => {
+            const remotePlayer = this._remotePlayers[info.playerId];
+
+            if (remotePlayer && remotePlayer.mesh) {
+                // A) Actualizar Posición y Rotación
+                remotePlayer.mesh.position.set(info.x, info.y, info.z);
+                remotePlayer.mesh.quaternion.set(
+                    info.rotation._x,
+                    info.rotation._y,
+                    info.rotation._z,
+                    info.rotation._w
+                );
+
+                // B) Actualizar Animación
+                // Verificamos que el jugador tenga acciones cargadas y el servidor mande una animación
+                if (remotePlayer.actions && info.anim) {
+
+                    // Solo cambiamos si la animación es diferente a la actual
+                    if (remotePlayer.currentAnim !== info.anim) {
+
+                        const newAction = remotePlayer.actions[info.anim];
+                        const prevAction = remotePlayer.actions[remotePlayer.currentAnim];
+
+                        // --- CORRECCIÓN: ---
+                        // Si la nueva animación ya cargó (newAction existe), la ponemos.
+                        // No nos importa si la "prevAction" no existe (puede pasar al inicio).
+                        if (newAction) {
+                            if (prevAction) {
+                                prevAction.fadeOut(0.2); // Si hay anterior, la desvanecemos
+                            }
+
+                            newAction.reset().fadeIn(0.2).play(); // Reproducimos la nueva
+                            remotePlayer.currentAnim = info.anim; // Actualizamos el registro
+                        }
+                    }
+                }
+            }
+        });
+
+        // 4. Alguien se desconectó
+        this._socket.on('playerDisconnected', (id) => {
+            if (this._remotePlayers[id]) {
+                this._scene.remove(this._remotePlayers[id].mesh);
+                delete this._remotePlayers[id];
+            }
+        });
+    }
+
+    _addRemotePlayer(id, data) {
+        const loader = new FBXLoader();
+        loader.setPath('./Resources/Modelos/Personaje/');
+
+        // 1. Cargar el Modelo
+        loader.load('Tilin2.fbx', (fbx) => {
+            fbx.scale.setScalar(0.05);
+            fbx.traverse(c => { c.castShadow = true; });
+
+            // Posición inicial
+            fbx.position.set(data.x, data.y, data.z);
+            if (data.rotation) {
+                fbx.quaternion.set(data.rotation._x, data.rotation._y, data.rotation._z, data.rotation._w);
+            }
+
+            // --- SISTEMA DE ANIMACIÓN REMOTA ---
+            const mixer = new THREE.AnimationMixer(fbx);
+            this._mixers.push(mixer); // ¡Importante! Agregarlo al array global para que se actualice
+
+            const actions = {}; // Aquí guardaremos las acciones (idle, walk, run)
+
+            // Función auxiliar para cargar clips
+            const loadAnim = (animName, fileName) => {
+                const animLoader = new FBXLoader();
+                animLoader.setPath('./Resources/Modelos/Personaje/');
+                animLoader.load(fileName, (anim) => {
+                    const action = mixer.clipAction(anim.animations[0]);
+                    actions[animName] = action;
+
+                    // Si es la animación inicial (idle), dale play
+                    if (animName === 'idle') {
+                        action.play();
+                    }
+                });
+            };
+
+            // Cargar las 3 animaciones clave
+            loadAnim('idle', 'idle.fbx');
+            loadAnim('walk', 'Walk.fbx');
+            loadAnim('run', 'Run.fbx');
+
+            // Guardamos todo en el objeto del jugador remoto
+            this._remotePlayers[id] = {
+                mesh: fbx,
+                mixer: mixer,
+                actions: actions,
+                currentAnim: 'idle' // Estado inicial
+            };
+
+            this._scene.add(fbx);
+        });
     }
 
 }

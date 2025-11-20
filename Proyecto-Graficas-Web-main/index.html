@@ -1,63 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="EchoRunner" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EchoRunner</title>
+
     <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/styles.css">
     <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/modal.css">
 
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <style>
+        #time-counter {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Arial', sans-serif;
+            font-size: 50px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px #000000;
+            z-index: 100;
+            pointer-events: none;
+            /* Para que no estorbe al clickear */
+            display: none;
+            /* Se oculta en los menús, se muestra al jugar */
+        }
+
+        /* Ocultar elementos por defecto para manejarlos con JS */
+        #welcome-message,
+        #start-button {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
+
     <div id="MenuInicio" class="MenuDeInicio">
         <div class="MenuDeInicio-contenido">
-            <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Logo.png" alt="Logo de EchoRunner" class="logo">
-            <p id="start-button" class="instrucciones">Presiona Click para empezar</p>
+            <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Logo.png" alt="Logo" class="logo">
+
+            <div id="g_id_onload"
+                data-client_id="770684243514-ihds2q7b9ahb5oecjl1rhglbcmimipd4.apps.googleusercontent.com"
+                data-callback="handleCredentialResponse" data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline"
+                data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left">
+            </div>
+
+            <p id="welcome-message" class="instrucciones">
+                ¡Hola, <span id="user-name" style="color: #e6ff04; font-weight: bold;">Jugador</span>!
+            </p>
+
+            <p id="start-button" class="instrucciones" style="cursor: pointer; text-decoration: underline;">
+                > PRESIONA CLICK PARA ENTRAR < </p>
         </div>
     </div>
 
     <div id="MainMenu" class="MainMenu" style="display: none;">
-        <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Logo2.png" alt="Logo de EchoRunner" class="logo2">
+        <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Logo2.png" alt="Logo" class="logo2">
         <div class="MainMenu-contenido">
             <button class="menu-button" id="jugar-button">Jugar</button>
             <button class="menu-button" id="options-button">Opciones</button>
             <button class="menu-button" id="score-button">Puntuaciones</button>
             <button class="menu-button" id="post-button">Publicación</button>
-            <button class="menu-button" id="back-to-menu-button">Volver al Menu</button>
-        </div>
-    </div>
-
-    <!-- Modal de Puntuaciones -->
-    <div id="scoreModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span id="closeScoreModal" class="close">&times;</span>
-            <h2>Puntuaciones</h2>
-            <ul id="scoreList"></ul>
-        </div>
-    </div>
-
-    <!-- Modal o contenedor de publicaciones -->
-    <div id="socialModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span id="closeSocialModal" class="close">&times;</span>
-            <h2>Red Social</h2>
-
-            <!-- Nuevo campo para nombre de usuario -->
-            <input type="text" id="usernameInput" placeholder="Tu nombre de usuario" />
-
-            <textarea id="postContent" placeholder="Escribe tu publicación..." rows="3"></textarea>
-            <br>
-            <button id="sendPost">Publicar</button>
-
-            <hr>
-            <div id="postsContainer"></div>
+            <button class="menu-button" id="back-to-menu-button">Salir</button>
         </div>
     </div>
 
     <div id="GameMenu" class="GameMenu" style="display: none;">
-        <h2 class="game-menu-title">Selecciona un modo de juego</h2>
+        <h2 class="game-menu-title">Selecciona un modo</h2>
         <div class="GameMenu-opciones">
             <div class="game-option" data-mode="solitario">
                 <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Solitario.png" alt="Solitario"
@@ -77,18 +94,15 @@
         <h2 class="level-title">Selecciona un nivel</h2>
         <div class="level-options">
             <div class="level-option" data-level="plano">
-                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/1.png" alt="Nivel 1"
-                    class="level-image">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/1.png" class="level-image">
                 <p>Nivel 1</p>
             </div>
             <div class="level-option" data-level="obstaculos">
-                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/2.png" alt="Nivel 2"
-                    class="level-image">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/2.png" class="level-image">
                 <p>Nivel 2</p>
             </div>
             <div class="level-option" data-level="laberinto">
-                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/3.png" alt="Nivel 3"
-                    class="level-image">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/3.png" class="level-image">
                 <p>Nivel 3</p>
             </div>
         </div>
@@ -100,11 +114,42 @@
         <button class="menu-button" id="back-from-options">Regresar</button>
     </div>
 
-    <!-- Contenedor del juego -->
+    <div id="scoreModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span id="closeScoreModal" class="close">&times;</span>
+            <h2>Puntuaciones</h2>
+            <ul id="scoreList"></ul>
+        </div>
+    </div>
+
+    <div id="socialModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span id="closeSocialModal" class="close">&times;</span>
+            <h2>Red Social</h2>
+            <input type="text" id="usernameInput" placeholder="Usuario" readonly style="background-color: #ddd;" />
+            <textarea id="postContent" placeholder="Comparte tu logro..." rows="3"></textarea>
+            <br>
+            <button id="sendPost">Publicar en Twitter</button>
+            <hr>
+            <div id="postsContainer"></div>
+        </div>
+    </div>
+
     <div id="gameContainer" style="display:none;"></div>
 
-    <div id="audio-icon" class="audio-icon">
-        <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/SonidoOFF.png" alt="Control de audio" id="audio-img">
+    <div id="time-counter">30</div>
+
+    <div id="orbCounter"
+        style="position: absolute; top: 20px; right: 20px; color: white; font-size: 24px; font-weight: bold; display: none;">
+        Orbes: 0
+    </div>
+
+    <div id="energy-bar" style="position: absolute; top: 20px; left: 20px; display: none;">
+        <img id="barra-energia-img" src="/Proyecto-Graficas-Web-main/Resources/UI/HUH.png" width="200">
+    </div>
+
+    <div id="audio-icon" class="audio-icon" style="display: none;"> <img
+            src="/Proyecto-Graficas-Web-main/Resources/Imagenes/SonidoOFF.png" id="audio-img">
     </div>
 
     <audio id="background-music" loop>
@@ -112,24 +157,78 @@
     </audio>
 
     <div class="creditos">
-        <p> ABRANCHILL Studios
-            <br>
-            Abraham Israel Ramirez Flores
-            <br>
-            Fernanda Elizabeth Guerrero Canizalez
-            <br>
-            Alondra Garza Gomez
-            <br>
-            &copy; 2025 ABRANCHILL Studios.
-        </p>
+        <p>ABRANCHILL Studios &copy; 2025</p>
     </div>
 
+    <script>
+        // Variables Globales para que el juego sepa quién eres y cómo jugar
+        window.currentUser = null;      // Guardará { id, username, picture }
+        window.isMultiplayer = false;   // true = conectar a Socket.io
+
+        // --- FUNCIÓN QUE LLAMA GOOGLE AL LOGUEARSE ---
+        function handleCredentialResponse(response) {
+            console.log("Token recibido de Google...");
+
+            // Enviamos el token a NUESTRO backend (server.js)
+            fetch('http://localhost:3000/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: response.credential })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // LOGIN EXITOSO
+                        console.log("Usuario autenticado:", data.user);
+                        window.currentUser = data.user;
+
+                        sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+
+                        // Actualizar UI del Menú Inicio
+                        document.querySelector('.g_id_signin').style.display = 'none'; // Ocultar botón Google
+                        document.getElementById('user-name').innerText = data.user.username;
+                        document.getElementById('welcome-message').style.display = 'block';
+                        document.getElementById('start-button').style.display = 'block';
+
+                        // Pre-llenar el modal social
+                        document.getElementById('usernameInput').value = data.user.username;
+                    } else {
+                        alert("Error de autenticación: " + data.message);
+                    }
+                })
+                .catch(err => console.error("Error conectando con el servidor:", err));
+        }
+
+        // --- LÓGICA DE SELECCIÓN DE MODO (SOLO/MULTI) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameOptions = document.querySelectorAll('.game-option');
+
+            gameOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const mode = option.getAttribute('data-mode');
+
+                    if (mode === 'multijugador') {
+                        console.log("Modo MULTIJUGADOR seleccionado");
+                        // CAMBIO IMPORTANTE: Guardar en sessionStorage
+                        sessionStorage.setItem('isMultiplayer', 'true');
+                    } else {
+                        console.log("Modo SOLITARIO seleccionado");
+                        // CAMBIO IMPORTANTE: Guardar en sessionStorage
+                        sessionStorage.setItem('isMultiplayer', 'false');
+                    }
+
+                    // Visualmente podrías marcar cuál está seleccionado aquí si quisieras
+                });
+            });
+        });
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+
     <script src="/Proyecto-Graficas-Web-main/Public/js/main.js" type="module"></script>
     <script src="/Proyecto-Graficas-Web-main/Public/js/menus.js"></script>
     <script src="/Proyecto-Graficas-Web-main/Public/js/GameManager.js"></script>
     <script src="/Proyecto-Graficas-Web-main/Public/js/social.js"></script>
-
 
 </body>
 

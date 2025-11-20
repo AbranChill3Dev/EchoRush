@@ -8,14 +8,14 @@
   <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/hud.css">
   <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/styles.css">
   <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/contador.css">
+
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body>
 
   <div id="orbCounter" class="orb-counter">Orbes: 0</div>
-
   <div id="time-counter">30</div>
-
   <div id="pauseOverlay" class="pause-overlay" style="display: none;"></div>
 
   <div id="pauseMenu" class="pauseMenu" style="display: none;">
@@ -26,11 +26,31 @@
     </div>
   </div>
 
+  <script>
+    // 1. RECUPERAR USUARIO
+    const storedUser = sessionStorage.getItem('currentUser');
+    if (storedUser) {
+      window.currentUser = JSON.parse(storedUser);
+      console.log("Jugador identificado:", window.currentUser.username);
+    } else {
+      console.warn("Jugando como invitado (sin sesión).");
+      // Crear un usuario temporal si no hay login
+      window.currentUser = { username: "Invitado" + Math.floor(Math.random() * 1000), id: null };
+    }
+
+    // 2. RECUPERAR MODO DE JUEGO (SOLO/MULTI)
+    const multiplayerFlag = sessionStorage.getItem('isMultiplayer');
+    // Convertimos el texto "true" a booleano real
+    window.isMultiplayer = (multiplayerFlag === 'true');
+
+    console.log("Modo de juego:", window.isMultiplayer ? "ONLINE" : "OFFLINE");
+  </script>
+
   <script src="/Proyecto-Graficas-Web-main/Public/js/niveles.js" type="module"></script>
   <script src="/Proyecto-Graficas-Web-main/Public/js/OrbSpawner.js" type="module"></script>
   <script src="/Proyecto-Graficas-Web-main/Public/js/GameManager.js"></script>
   <script src="/Proyecto-Graficas-Web-main/Public/js/social.js"></script>
-  <!-- pantallitas uwu -->
+
   <div id="win-screen" class="overlay">
     <div class="message win">
       <h1>GANASTE</h1>
@@ -51,19 +71,9 @@
     </div>
   </div>
 
-  <!-- rip opcion kawai pero porsi 
-<div id="hud">
-  <div id="barra-contenedor">
-    <div id="barra-energia"></div>
-  </div>
-  <img id="icono-orb" src="./Resources/Imagenes/HUH.png" alt="Orbe" />
-</div>-->
-
-  <!--  Barra de energíaoficial -->
   <div id="barra-energia-container">
-    <img id="barra-energia-img" src="./Resources/UI/HUH.png" alt="Barra de energía">
+    <img id="barra-energia-img" src="Resources/UI/HUH.png" alt="Barra de energía">
   </div>
-
 
 </body>
 
