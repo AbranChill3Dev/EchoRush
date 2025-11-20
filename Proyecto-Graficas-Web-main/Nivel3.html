@@ -4,10 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nivel 1</title>
+  <title>Nivel 3</title>
   <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/hud.css">
   <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/styles.css">
   <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/contador.css">
+  <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/modal.css">
+
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 
 <body>
@@ -25,17 +28,14 @@
     </div>
   </div>
 
-  <script src="/Proyecto-Graficas-Web-main/Public/js/nivel3.js" type="module"></script>
-  <script src="/Proyecto-Graficas-Web-main/Public/js/OrbSpawner.js" type="module"></script>
-  <script src="/Proyecto-Graficas-Web-main/Public/js/GameManager.js"></script>
-  <script src="/Proyecto-Graficas-Web-main/Public/js/social.js"></script>
+  <div id="barra-energia-container">
+    <img id="barra-energia-img" src="Resources/UI/HUH.png" alt="Barra de energía">
+  </div>
 
-  <!-- pantallitas uwu -->
   <div id="win-screen" class="overlay">
     <div class="message win">
       <h1>GANASTE</h1>
       <div>
-        <button onclick="location.reload()">Reintentar</button>
         <button onclick="location.href='index.html'">Volver al menú</button>
       </div>
     </div>
@@ -51,10 +51,46 @@
     </div>
   </div>
 
-  <!--  Barra de energíaoficial -->
-  <div id="barra-energia-container">
-    <img id="barra-energia-img" src="./Resources/UI/HUH.png" alt="Barra de energía">
+  <div id="socialModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span id="closeSocialModal" class="close">&times;</span>
+      <h2>Red Social</h2>
+
+      <input type="text" id="usernameInput" placeholder="Usuario" readonly
+        style="background-color: #333; color: #bbb;" />
+
+      <textarea id="postContent" placeholder="Escribe tu mensaje..." rows="3"></textarea>
+      <br>
+
+      <button id="sendPost">Publicar</button>
+
+      <hr>
+      <div id="postsContainer"></div>
+    </div>
   </div>
+
+  <script>
+    // 1. RECUPERAR USUARIO
+    const storedUser = sessionStorage.getItem('currentUser');
+    if (storedUser) {
+      window.currentUser = JSON.parse(storedUser);
+      console.log("Jugador identificado:", window.currentUser.username);
+    } else {
+      console.warn("Jugando como invitado.");
+      window.currentUser = { username: "Invitado" + Math.floor(Math.random() * 1000), id: null };
+    }
+
+    // Recuperar modo de juego
+    const multiplayerFlag = sessionStorage.getItem('isMultiplayer');
+    window.isMultiplayer = (multiplayerFlag === 'true');
+    console.log("Modo de juego:", window.isMultiplayer ? "ONLINE" : "OFFLINE");
+  </script>
+
+  <script src="/Proyecto-Graficas-Web-main/Public/js/nivel3.js" type="module"></script>
+  <script src="/Proyecto-Graficas-Web-main/Public/js/OrbSpawner.js" type="module"></script>
+  <script src="/Proyecto-Graficas-Web-main/Public/js/GameManager.js"></script>
+  <script src="/Proyecto-Graficas-Web-main/Public/js/social.js"></script>
+
 </body>
 
 </html>

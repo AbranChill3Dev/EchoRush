@@ -457,6 +457,10 @@ class CharacterControllerDemo {
         );
         // ----------------------------------------------
 
+        // --- MULTIJUGADOR: Variables ---
+        this._remotePlayers = {};
+        this._socket = null;
+
         this._isDead = false;
 
         this._Initialize();
@@ -602,6 +606,22 @@ class CharacterControllerDemo {
 
         const btnSalir = document.getElementById('back-to-menu-button');
         if (btnSalir) btnSalir.addEventListener('click', () => this._exitToMenu());
+
+        // --- MULTIJUGADOR: Conectar si el usuario eligió ese modo ---
+        if (window.isMultiplayer) {
+            console.log("🔵 Iniciando modo Multijugador...");
+
+            // ESTO ES LO QUE TIENES AHORA (solo conecta):
+            // this._socket = io(); 
+
+            // CÁMBIALO POR ESTO (para enviar el nombre):
+            const myName = window.currentUser ? window.currentUser.username : "Invitado";
+            this._socket = io({
+                query: { username: myName }
+            });
+
+            this._setupSocketEvents();
+        }
 
         this._RAF();
     }
@@ -821,12 +841,15 @@ class CharacterControllerDemo {
 
     _Step(timeElapsed) {
         const timeElapsedS = timeElapsed * 0.001;
+
+        // Actualizaciones normales
         if (this._mixers) this._mixers.map(m => m.update(timeElapsedS));
-        if (this._enemyMixer) this._enemyMixer.update(timeElapsedS);
+        if (this._enemyMixer) this._enemyMixer.update(timeElapsed * 0.001);
         if (this._controls) this._controls.Update(timeElapsedS);
         if (this._orbSpawner) this._orbSpawner.update(timeElapsedS);
-        if (this._dustSystem) this._dustSystem.update(timeElapsedS);
+        if (this._dustSystem) this._dustSystem.update(timeElapsedS); // Nivel 2 usa polvo, no fuego
 
+        // Explosiones
         for (let i = this._explosions.length - 1; i >= 0; i--) {
             const explosion = this._explosions[i];
             const isDead = explosion.update(timeElapsedS);
@@ -836,6 +859,24 @@ class CharacterControllerDemo {
         this._CheckCollisions();
         this._CheckBossEncounter();
         this._UpdateCamera();
+
+        // --- MULTIJUGADOR: Enviar datos al servidor ---
+        if (this._socket && this._controls && this._controls._target) {
+            const pos = this._controls._target.position;
+            const rot = this._controls._target.quaternion;
+
+            // Obtenemos la animación actual de forma segura
+            const currentAnim = this._controls._stateMachine._currentState?.Name || 'idle';
+
+            this._socket.emit('playerMovement', {
+                x: pos.x,
+                y: pos.y,
+                z: pos.z,
+                rotation: rot,
+                anim: currentAnim
+            });
+        }
+        // ----------------------------------------------
     }
 
     _TriggerDeath() {
@@ -878,17 +919,73 @@ class CharacterControllerDemo {
     _TriggerWin() {
         if (this._isDead || this._gameWon) return;
         this._gameWon = true;
+
+        // 1. Mostrar pantalla de victoria
         const overlay = document.getElementById("win-screen");
         if (overlay) overlay.classList.add("active");
+
         clearInterval(this._temporizador);
         if (this._controls) this._controls._input._keys = {};
 
-        const playerName = prompt("¡Ganaste! Ingresa tu nombre:");
-        fetch('http://localhost:3000/score', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: playerName, score: this._orbsCollected })
-        });
+        // 2. Guardar Puntaje
+        const playerName = window.currentUser ? window.currentUser.username : "Jugador Anónimo";
+        const userId = window.currentUser ? window.currentUser.id : null;
+
+        if (userId) {
+            fetch('http://localhost:3000/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, score: this._orbsCollected, level: "Nivel 1" })
+            }).catch(err => console.error(err));
+        }
+
+        // 3. Configurar el Botón de Twitter
+        const buttonContainer = overlay.querySelector('div');
+
+        if (!document.getElementById('btn-share-twitter')) {
+            const twitterBtn = document.createElement('button');
+            twitterBtn.id = 'btn-share-twitter';
+            twitterBtn.innerText = "🏆 Compartir en Twitter";
+            twitterBtn.style.backgroundColor = "#1DA1F2";
+            twitterBtn.style.color = "white";
+            twitterBtn.style.marginTop = "10px";
+            twitterBtn.style.cursor = "pointer";
+
+            // --- AQUÍ ESTÁ LA DEPURACIÓN ---
+            // ... dentro de _TriggerWin ...
+
+            twitterBtn.onclick = () => {
+                const socialModal = document.getElementById('socialModal');
+                const postInput = document.getElementById('postContent');
+                const userInput = document.getElementById('usernameInput');
+
+                if (socialModal) {
+                    // 1. Mostrar ventana (Forzando capa superior)
+                    socialModal.style.display = 'flex';
+                    socialModal.style.zIndex = "99999";
+
+                    // 2. DATOS DEL JUGADOR
+                    const nombre = window.currentUser ? window.currentUser.username : "Jugador Invitado";
+                    const puntos = this._orbsCollected;
+                    const nivel = "Nivel 3"; // Cambia esto en Nivel 2 y 3
+
+                    // 3. LLENAR AUTOMÁTICAMENTE EL MENSAJE
+                    // Aquí defines qué dirá el tweet
+                    if (postInput) {
+                        postInput.value = `¡He completado el ${nivel}!\n\n👤 Jugador: ${nombre}\n💎 Puntuación: ${puntos} orbes\n\n¿Podrás superarme?`;
+                    }
+
+                    // Llenar el campo de usuario (visual)
+                    if (userInput) {
+                        userInput.value = nombre;
+                    }
+                } else {
+                    console.error("No se encontró el modal #socialModal en el HTML");
+                }
+            };
+
+            buttonContainer.appendChild(twitterBtn);
+        }
     }
 
     _CheckBossEncounter() {
@@ -970,6 +1067,142 @@ class CharacterControllerDemo {
             }
         };
         this._enemyMixer.addEventListener('finished', onFinish);
+    }
+
+    _setupSocketEvents() {
+        // 1. Cargar jugadores existentes
+        this._socket.on('currentPlayers', (players) => {
+            Object.keys(players).forEach((id) => {
+                if (id !== this._socket.id) {
+                    this._addRemotePlayer(id, players[id]);
+                }
+            });
+        });
+
+        // 2. Alguien nuevo entró
+        this._socket.on('newPlayer', (info) => {
+            this._addRemotePlayer(info.playerId, info.playerInfo);
+        });
+
+        // 3. Alguien se movió (Sincronización de Posición y Animación)
+        this._socket.on('playerMoved', (info) => {
+            const remotePlayer = this._remotePlayers[info.playerId];
+
+            if (remotePlayer && remotePlayer.mesh) {
+                // Actualizar Posición
+                remotePlayer.mesh.position.set(info.x, info.y, info.z);
+                remotePlayer.mesh.quaternion.set(
+                    info.rotation._x, info.rotation._y, info.rotation._z, info.rotation._w
+                );
+
+                // Actualizar Animación
+                if (remotePlayer.actions && info.anim) {
+                    if (remotePlayer.currentAnim !== info.anim) {
+                        const newAction = remotePlayer.actions[info.anim];
+                        const prevAction = remotePlayer.actions[remotePlayer.currentAnim];
+
+                        if (newAction) {
+                            if (prevAction) prevAction.fadeOut(0.2);
+                            newAction.reset().fadeIn(0.2).play();
+                            remotePlayer.currentAnim = info.anim;
+                        }
+                    }
+                }
+            }
+        });
+
+        // 4. Desconexión
+        this._socket.on('playerDisconnected', (id) => {
+            if (this._remotePlayers[id]) {
+                this._scene.remove(this._remotePlayers[id].mesh);
+                delete this._remotePlayers[id];
+            }
+        });
+    }
+
+    _addRemotePlayer(id, data) {
+        const loader = new FBXLoader();
+        loader.setPath('./Resources/Modelos/Personaje/');
+
+        loader.load('Tilin2.fbx', (fbx) => {
+            fbx.scale.setScalar(0.05);
+            fbx.traverse(c => { c.castShadow = true; });
+
+            // --- NUEVO: AGREGAR ETIQUETA DE NOMBRE ---
+            // Usamos data.username (que viene del servidor) o "Jugador" por defecto
+            const nameLabel = this._createNameLabel(data.username || "Jugador");
+            fbx.add(nameLabel); // Pegamos el cartel al personaje
+
+            // Posición inicial
+            fbx.position.set(data.x, data.y, data.z);
+            if (data.rotation) {
+                fbx.quaternion.set(data.rotation._x, data.rotation._y, data.rotation._z, data.rotation._w);
+            }
+
+            // Configurar AnimationMixer
+            const mixer = new THREE.AnimationMixer(fbx);
+            this._mixers.push(mixer); // Agregar al array global para que se mueva
+
+            const actions = {};
+
+            // Cargar clips de animación
+            const loadAnim = (animName, fileName) => {
+                const animLoader = new FBXLoader();
+                animLoader.setPath('./Resources/Modelos/Personaje/');
+                animLoader.load(fileName, (anim) => {
+                    const action = mixer.clipAction(anim.animations[0]);
+                    actions[animName] = action;
+                    if (animName === 'idle') action.play();
+                });
+            };
+
+            loadAnim('idle', 'idle.fbx');
+            loadAnim('walk', 'Walk.fbx');
+            loadAnim('run', 'Run.fbx');
+
+            this._remotePlayers[id] = {
+                mesh: fbx,
+                mixer: mixer,
+                actions: actions,
+                currentAnim: 'idle'
+            };
+
+            this._scene.add(fbx);
+        });
+    }
+
+    _createNameLabel(text) {
+        // 1. Crear un Canvas HTML5 para dibujar el texto
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        // Configuración del tamaño y fuente
+        // (Usamos tamaños grandes para que no se vea pixelado)
+        canvas.width = 512;
+        canvas.height = 128;
+
+        context.font = 'bold 70px Arial';
+        context.fillStyle = 'white';
+        context.textAlign = 'center';
+
+        // Sombra negra para que se lea bien sobre cualquier fondo
+        context.shadowColor = "black";
+        context.shadowBlur = 7;
+        context.lineWidth = 4;
+        context.strokeText(text, 256, 80); // Borde
+        context.fillText(text, 256, 80);   // Relleno
+
+        // 2. Crear textura y Sprite de Three.js
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const sprite = new THREE.Sprite(spriteMaterial);
+
+        // 3. Ajustar posición y escala
+        // Como tu personaje es escala 0.05, el sprite debe ser MUY grande localmente para verse normal.
+        sprite.position.set(0, 200, 0); // 200 unidades arriba (en espacio local del modelo)
+        sprite.scale.set(60, 15, 1);    // Escala del cartel
+
+        return sprite;
     }
 }
 

@@ -973,7 +973,10 @@ class CharacterControllerDemo {
         // --- MULTIJUGADOR: Conectar si el usuario eligió ese modo ---
         if (window.isMultiplayer) {
             console.log("🔵 Iniciando modo Multijugador...");
-            this._socket = io(); // Conecta al servidor
+            const myName = window.currentUser ? window.currentUser.username : "Invitado";
+            this._socket = io({
+                query: { username: myName }
+            });
             this._setupSocketEvents(); // Configura qué hacer cuando recibimos datos
         }
 
@@ -1311,18 +1314,79 @@ class CharacterControllerDemo {
         if (this._controls) this._controls._input._keys = {}; // Detener movimiento
     }
 
-    /**
-     * Muestra la pantalla de "Ganaste".
-     */
+    // ==========================================
+    //  NUEVA FUNCIÓN _TriggerWin CON TWITTER
+    // ==========================================
     _TriggerWin() {
-        if (this._isDead || this._gameWon) return; // No hacer nada si ya terminó
+        if (this._isDead || this._gameWon) return;
         this._gameWon = true;
 
+        // 1. Mostrar pantalla de victoria
         const overlay = document.getElementById("win-screen");
         if (overlay) overlay.classList.add("active");
 
         clearInterval(this._temporizador);
-        if (this._controls) this._controls._input._keys = {}; // Detener movimiento
+        if (this._controls) this._controls._input._keys = {};
+
+        // 2. Guardar Puntaje
+        const playerName = window.currentUser ? window.currentUser.username : "Jugador Anónimo";
+        const userId = window.currentUser ? window.currentUser.id : null;
+
+        if (userId) {
+            fetch('http://localhost:3000/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, score: this._orbsCollected, level: "Nivel 1" })
+            }).catch(err => console.error(err));
+        }
+
+        // 3. Configurar el Botón de Twitter
+        const buttonContainer = overlay.querySelector('div');
+
+        if (!document.getElementById('btn-share-twitter')) {
+            const twitterBtn = document.createElement('button');
+            twitterBtn.id = 'btn-share-twitter';
+            twitterBtn.innerText = "🏆 Compartir en Twitter";
+            twitterBtn.style.backgroundColor = "#1DA1F2";
+            twitterBtn.style.color = "white";
+            twitterBtn.style.marginTop = "10px";
+            twitterBtn.style.cursor = "pointer";
+
+            // --- AQUÍ ESTÁ LA DEPURACIÓN ---
+            // ... dentro de _TriggerWin ...
+
+            twitterBtn.onclick = () => {
+                const socialModal = document.getElementById('socialModal');
+                const postInput = document.getElementById('postContent');
+                const userInput = document.getElementById('usernameInput');
+
+                if (socialModal) {
+                    // 1. Mostrar ventana (Forzando capa superior)
+                    socialModal.style.display = 'flex';
+                    socialModal.style.zIndex = "99999";
+
+                    // 2. DATOS DEL JUGADOR
+                    const nombre = window.currentUser ? window.currentUser.username : "Jugador Invitado";
+                    const puntos = this._orbsCollected;
+                    const nivel = "Nivel 1"; // Cambia esto en Nivel 2 y 3
+
+                    // 3. LLENAR AUTOMÁTICAMENTE EL MENSAJE
+                    // Aquí defines qué dirá el tweet
+                    if (postInput) {
+                        postInput.value = `¡He completado el ${nivel}!\n\n👤 Jugador: ${nombre}\n💎 Puntuación: ${puntos} orbes\n\n¿Podrás superarme?`;
+                    }
+
+                    // Llenar el campo de usuario (visual)
+                    if (userInput) {
+                        userInput.value = nombre;
+                    }
+                } else {
+                    console.error("No se encontró el modal #socialModal en el HTML");
+                }
+            };
+
+            buttonContainer.appendChild(twitterBtn);
+        }
     }
 
     /**
@@ -1526,6 +1590,11 @@ class CharacterControllerDemo {
             fbx.scale.setScalar(0.05);
             fbx.traverse(c => { c.castShadow = true; });
 
+            // --- NUEVO: AGREGAR ETIQUETA DE NOMBRE ---
+            // Usamos data.username (que viene del servidor) o "Jugador" por defecto
+            const nameLabel = this._createNameLabel(data.username || "Jugador");
+            fbx.add(nameLabel); // Pegamos el cartel al personaje
+
             // Posición inicial
             fbx.position.set(data.x, data.y, data.z);
             if (data.rotation) {
@@ -1568,6 +1637,40 @@ class CharacterControllerDemo {
 
             this._scene.add(fbx);
         });
+    }
+
+    _createNameLabel(text) {
+        // 1. Crear un Canvas HTML5 para dibujar el texto
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        // Configuración del tamaño y fuente
+        // (Usamos tamaños grandes para que no se vea pixelado)
+        canvas.width = 512;
+        canvas.height = 128;
+
+        context.font = 'bold 70px Arial';
+        context.fillStyle = 'white';
+        context.textAlign = 'center';
+
+        // Sombra negra para que se lea bien sobre cualquier fondo
+        context.shadowColor = "black";
+        context.shadowBlur = 7;
+        context.lineWidth = 4;
+        context.strokeText(text, 256, 80); // Borde
+        context.fillText(text, 256, 80);   // Relleno
+
+        // 2. Crear textura y Sprite de Three.js
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const sprite = new THREE.Sprite(spriteMaterial);
+
+        // 3. Ajustar posición y escala
+        // Como tu personaje es escala 0.05, el sprite debe ser MUY grande localmente para verse normal.
+        sprite.position.set(0, 200, 0); // 200 unidades arriba (en espacio local del modelo)
+        sprite.scale.set(60, 15, 1);    // Escala del cartel
+
+        return sprite;
     }
 
 }
