@@ -1,0 +1,49 @@
+/* ola, esto es pa lo d la barra d vida y asi esto de aqi arriba era un prototipo jeje */
+#hud {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10;
+}
+
+#barra-contenedor {
+  width: 200px;
+  height: 25px;
+  background-color: #ffeefb; 
+  border: 3px solid #c5b8ff; 
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 0 8px #fff0f0;
+}
+
+#barra-energia {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #a3d8ff, #ffe49a); 
+  border-radius: 12px 0 0 12px;
+  transition: width 0.5s ease-in-out;
+}
+
+#icono-orb {
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 0 4px #fff0f0);
+}
+/* barra de energa en la esquinade abajo*/
+#barra-energia-container {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 10;
+}
+
+#barra-energia-img {
+  width: 180px; 
+  height: auto;
+  image-rendering: smooth;
+  filter: drop-shadow(0 0 6px #fff0f0);
+}
+

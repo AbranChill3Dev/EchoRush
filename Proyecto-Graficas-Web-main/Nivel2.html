@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nivel 1</title>
+  <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/hud.css">
+  <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/styles.css">
+  <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/contador.css">
+</head>
+
+<body>
+
+  <div id="orbCounter" class="orb-counter">Orbes: 0</div>
+  <div id="time-counter">30</div>
+
+  <div id="pauseOverlay" class="pause-overlay" style="display: none;"></div>
+
+  <div id="pauseMenu" class="pauseMenu" style="display: none;">
+    <div class="Pausa-contenido">
+      <h2 class="Pausa-title">Pausa</h2>
+      <button class="menu-button" id="jugar-button">Continuar</button>
+      <button class="menu-button" id="back-to-menu-button">Salir al Menú</button>
+    </div>
+  </div>
+
+  <script src="/Proyecto-Graficas-Web-main/Public/js/nivel2.js" type="module"></script>
+  <script src="/Proyecto-Graficas-Web-main/Public/js/OrbSpawner.js" type="module"></script>
+  <script src="/Proyecto-Graficas-Web-main/Public/js/GameManager.js"></script>
+  <script src="/Proyecto-Graficas-Web-main/Public/js/social.js"></script>
+
+  <!-- pantallitas uwu -->
+  <div id="win-screen" class="overlay">
+    <div class="message win">
+      <h1>GANASTE</h1>
+      <div>
+        <button onclick="location.reload()">Reintentar</button>
+        <button onclick="location.href='index.html'">Volver al menú</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="lose-screen" class="overlay">
+    <div class="message lose">
+      <h1>PERDISTE</h1>
+      <div>
+        <button onclick="location.reload()">Reintentar</button>
+        <button onclick="location.href='index.html'">Volver al menú</button>
+      </div>
+    </div>
+  </div>
+
+  <!--  Barra de energíaoficial -->
+  <div id="barra-energia-container">
+    <img id="barra-energia-img" src="./Resources/UI/HUH.png" alt="Barra de energía">
+  </div>
+</body>
+
+</html>

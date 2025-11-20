@@ -1,0 +1,440 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/*Three.js */
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
+
+.MenuDeInicio {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+/*Logo*/
+.MenuDeInicio-contenido {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+    /* Lo coloca encima del lienzo 3D */
+    position: relative;
+    /* Necesario para que z-index funcione correctamente */
+    transform: translateY(-25px);
+    /* Ajusta la cantidad de píxeles */
+}
+
+.logo {
+    max-width: 75%;
+    height: auto;
+    animation: scaleUpDown 1s infinite alternate;
+}
+
+@keyframes scaleUpDown {
+    0% {
+        transform: scale(.9);
+    }
+
+    100% {
+        transform: scale(.95);
+    }
+}
+
+/*Click Menu*/
+.instrucciones {
+    color: white;
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 2.5rem;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+/*Creditos*/
+.creditos {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 1.0rem;
+    text-align: left;
+    z-index: 3;
+}
+
+/*--------------------------------------------------------------------------------------------------*/
+/*Main Menu*/
+.MainMenu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 2;
+    /* Para que esté por encima del escenario 3D */
+}
+
+/* Estilos para los botones del menú */
+.MainMenu-contenido {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    z-index: 2;
+    position: relative;
+    margin-top: 100px;
+}
+
+.menu-button {
+    background-color: #ffd700;
+    color: black;
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 3rem;
+    padding: 10px 40px;
+    border: 3px solid black;
+    cursor: pointer;
+    box-shadow: 5px 5px 0px black;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    z-index: 2;
+}
+
+.menu-button:hover {
+    background-color: white;
+    box-shadow: 2px 2px 0px black;
+}
+
+.logo2 {
+    max-width: 100%;
+    height: auto;
+    position: absolute;
+    top: -200px;
+    z-index: 4;
+    animation: scaleUpDown2 1s infinite alternate;
+}
+
+@keyframes scaleUpDown2 {
+    0% {
+        transform: scale(.3);
+    }
+
+    100% {
+        transform: scale(.35);
+    }
+}
+
+/*--------------------------------------------------------------------------------------------------*/
+/*Seleccionar*/
+.GameMenu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    /* Se ocultará con JS, pero esta es su configuración */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 3;
+    color: white;
+    font-family: 'Impact', 'Arial Black', sans-serif;
+}
+
+.game-menu-title {
+    font-size: 3rem;
+    margin-bottom: 50px;
+}
+
+.GameMenu-opciones {
+    display: flex;
+    gap: 50px;
+}
+
+.game-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    text-align: center;
+}
+
+.game-image {
+    width: 250px;
+    height: auto;
+    border: 3px solid #ffd700;
+    box-shadow: 5px 5px 0px black;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.game-image:hover {
+    transform: scale(1.1);
+    box-shadow: 8px 8px 0px black;
+}
+
+.game-option p {
+    margin-top: 15px;
+    font-size: 2rem;
+    color: white;
+}
+
+/*------------------------------------------------------------------------------------------------*/
+/*Elegir nivel*/
+.LevelMenu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 3;
+    color: white;
+    font-family: 'Impact', 'Arial Black', sans-serif;
+}
+
+.level-title {
+    font-size: 3rem;
+    margin-bottom: 50px;
+}
+
+.level-options {
+    display: flex;
+    gap: 50px;
+}
+
+.level-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    text-align: center;
+}
+
+.level-image {
+    width: 250px;
+    height: auto;
+    border: 3px solid #ffd700;
+    box-shadow: 5px 5px 0px black;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.level-image:hover {
+    transform: scale(1.1);
+    box-shadow: 8px 8px 0px black;
+}
+
+.level-option p {
+    margin-top: 15px;
+    font-size: 2rem;
+    color: white;
+}
+
+/*------------------------------------------------------------------------------------------------*/
+/*Audio*/
+.audio-icon {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    /* Asegura que esté por encima de todos los demás elementos */
+    cursor: pointer;
+    width: 50px;
+    height: 50px;
+}
+
+.audio-icon img {
+    width: 100%;
+    height: 100%;
+}
+
+/*------------------------------------------------------------------------------------------------*/
+/*Menu de opciones*/
+.OptionsMenu {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 3;
+}
+
+.options-title {
+    color: white;
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 3rem;
+    margin: 20px;
+}
+
+/*------------------------------------------------------------------------------------------------*/
+/* Pausa */
+.pause-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6); /* Negro con opacidad 60% */
+    z-index: 2; /* Debe estar debajo del menú */
+}
+
+.pauseMenu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 40px;
+    border-radius: 10px;
+    z-index: 3;
+}
+
+.Pausa-contenido {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    margin-top: 0;
+    z-index: 3;
+}
+
+.Pausa-title {
+    color: white;
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 3rem;
+    margin: 0;
+    z-index: 3;
+}
+
+/* Contador de orbes */
+.orb-counter {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.6);
+  color: #00ffea;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 10px;
+  z-index: 30;
+  user-select: none;
+}
+
+
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 9999;
+}
+
+.overlay.active {
+  display: flex;
+}
+
+/* --- pantallitas uwu --- */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  background-size: cover; 
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 1000;
+}
+
+
+#win-screen {
+  background-image: url('/Proyecto-Graficas-Web-main/Resources/Imagenes/ee.png'); /* usa tu imagen de ganar */
+}
+
+#lose-screen {
+  background-image: url('/Proyecto-Graficas-Web-main/Resources/Imagenes/peldio.png'); /* usa tu imagen de perder */
+}
+
+/* Contenedor principal del mensaje */
+.message {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Impact', sans-serif;
+  padding: 20px;
+}
+
+.message h1 {
+  font-size: 90px;
+  color: black;
+  text-shadow: 4px 4px 0px white;
+  margin-top: 20px; 
+}
+
+.message div {
+  display: flex;
+  justify-content: center;
+  gap: 80px;
+  margin-bottom: 50px;
+}
+
+.message button {
+  font-family: 'Impact', sans-serif;
+  font-size: 32px;
+  background-color: #FFD700;
+  border: 5px solid black;
+  color: black;
+  padding: 15px 35px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 4px 4px 0px #000;
+}
+
+.message button:hover {
+  transform: translateY(-3px);
+  box-shadow: 6px 6px 0px #000;
+}
+
+#win-screen.active,
+#lose-screen.active {
+  display: flex;
+}

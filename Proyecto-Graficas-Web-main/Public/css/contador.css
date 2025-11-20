@@ -1,0 +1,12 @@
+#time-counter {
+        position: absolute;
+        top: 20px;               /* Separado del techo */
+        left: 50%;               /* Al centro horizontal */
+        transform: translateX(-50%); /* Ajuste fino para centrar exacto */
+        font-family: 'Arial', sans-serif;
+        font-size: 40px;         /* Grande y visible */
+        font-weight: bold;
+        color: #ffffff;          /* Texto blanco */
+        text-shadow: 2px 2px 0px #000000; /* Borde negro para que se lea bien */
+        z-index: 10;             /* Por encima del juego */
+    }

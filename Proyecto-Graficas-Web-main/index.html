@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="EchoRunner" content="width=device-width, initial-scale=1.0">
+    <title>EchoRunner</title>
+    <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/styles.css">
+    <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/modal.css">
+
+</head>
+
+<body>
+    <div id="MenuInicio" class="MenuDeInicio">
+        <div class="MenuDeInicio-contenido">
+            <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Logo.png" alt="Logo de EchoRunner" class="logo">
+            <p id="start-button" class="instrucciones">Presiona Click para empezar</p>
+        </div>
+    </div>
+
+    <div id="MainMenu" class="MainMenu" style="display: none;">
+        <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Logo2.png" alt="Logo de EchoRunner" class="logo2">
+        <div class="MainMenu-contenido">
+            <button class="menu-button" id="jugar-button">Jugar</button>
+            <button class="menu-button" id="options-button">Opciones</button>
+            <button class="menu-button" id="score-button">Puntuaciones</button>
+            <button class="menu-button" id="post-button">Publicación</button>
+            <button class="menu-button" id="back-to-menu-button">Volver al Menu</button>
+        </div>
+    </div>
+
+    <!-- Modal de Puntuaciones -->
+    <div id="scoreModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span id="closeScoreModal" class="close">&times;</span>
+            <h2>Puntuaciones</h2>
+            <ul id="scoreList"></ul>
+        </div>
+    </div>
+
+    <!-- Modal o contenedor de publicaciones -->
+    <div id="socialModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span id="closeSocialModal" class="close">&times;</span>
+            <h2>Red Social</h2>
+
+            <!-- Nuevo campo para nombre de usuario -->
+            <input type="text" id="usernameInput" placeholder="Tu nombre de usuario" />
+
+            <textarea id="postContent" placeholder="Escribe tu publicación..." rows="3"></textarea>
+            <br>
+            <button id="sendPost">Publicar</button>
+
+            <hr>
+            <div id="postsContainer"></div>
+        </div>
+    </div>
+
+    <div id="GameMenu" class="GameMenu" style="display: none;">
+        <h2 class="game-menu-title">Selecciona un modo de juego</h2>
+        <div class="GameMenu-opciones">
+            <div class="game-option" data-mode="solitario">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Solitario.png" alt="Solitario"
+                    class="game-image">
+                <p>Solitario</p>
+            </div>
+            <div class="game-option" data-mode="multijugador">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Multijugador.png" alt="Multijugador"
+                    class="game-image">
+                <p>Multijugador</p>
+            </div>
+        </div>
+        <button class="menu-button" id="back-to-main-menu">Regresar</button>
+    </div>
+
+    <div id="LevelMenu" class="LevelMenu" style="display: none;">
+        <h2 class="level-title">Selecciona un nivel</h2>
+        <div class="level-options">
+            <div class="level-option" data-level="plano">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/1.png" alt="Nivel 1"
+                    class="level-image">
+                <p>Nivel 1</p>
+            </div>
+            <div class="level-option" data-level="obstaculos">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/2.png" alt="Nivel 2"
+                    class="level-image">
+                <p>Nivel 2</p>
+            </div>
+            <div class="level-option" data-level="laberinto">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/3.png" alt="Nivel 3"
+                    class="level-image">
+                <p>Nivel 3</p>
+            </div>
+        </div>
+        <button class="menu-button" id="back-from-level">Regresar</button>
+    </div>
+
+    <div id="OptionsMenu" class="OptionsMenu" style="display: none;">
+        <h2 class="options-title">Opciones</h2>
+        <button class="menu-button" id="back-from-options">Regresar</button>
+    </div>
+
+    <!-- Contenedor del juego -->
+    <div id="gameContainer" style="display:none;"></div>
+
+    <div id="audio-icon" class="audio-icon">
+        <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/SonidoOFF.png" alt="Control de audio" id="audio-img">
+    </div>
+
+    <audio id="background-music" loop>
+        <source src="/Proyecto-Graficas-Web-main/Resources/Audio/Hi-Fi Rush OST The Rush.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="creditos">
+        <p> ABRANCHILL Studios
+            <br>
+            Abraham Israel Ramirez Flores
+            <br>
+            Fernanda Elizabeth Guerrero Canizalez
+            <br>
+            Alondra Garza Gomez
+            <br>
+            &copy; 2025 ABRANCHILL Studios.
+        </p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+    <script src="/Proyecto-Graficas-Web-main/Public/js/main.js" type="module"></script>
+    <script src="/Proyecto-Graficas-Web-main/Public/js/menus.js"></script>
+    <script src="/Proyecto-Graficas-Web-main/Public/js/GameManager.js"></script>
+    <script src="/Proyecto-Graficas-Web-main/Public/js/social.js"></script>
+
+
+</body>
+
+</html>
