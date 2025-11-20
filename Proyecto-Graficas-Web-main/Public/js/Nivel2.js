@@ -1142,36 +1142,18 @@ class CharacterControllerDemo {
         // ----------------------------------------------
     }
 
+        //  API
+// --- CÓDIGO NUEVO ---
     _TriggerDeath() {
-        if (this._isDead) return; // evita duplicados
-        this._isDead = true;
-
-        // Ocultar jugador
+        if (this._isDead) return;
+        
+        // 1. Ocultar al personaje
         if (this._controls && this._controls._target) {
             this._controls._target.visible = false;
         }
 
-        // Preguntar nombre
-        let playerName = prompt("¡Perdiste! Ingresa tu nombre:");
-        if (!playerName) playerName = "Jugador"; // Default
-
-        // Enviar puntuación a la API
-        fetch('http://localhost:3000/score', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: playerName, score: this._orbsCollected })
-        })
-            .then(res => res.json())
-            .then(data => {
-                console.log('Puntuación guardada:', data);
-                alert(`¡Gracias ${playerName}! Tu puntuación de ${this._orbsCollected} orbes fue guardada.`);
-                window.location.reload(); // reinicia el juego para probar
-            })
-            .catch(err => {
-                console.error('Error al guardar la puntuación:', err);
-                alert(`¡Error al guardar! Tu puntuación fue: ${this._orbsCollected}`);
-                window.location.reload(); // reinicia incluso si la API falla
-            });
+        // 2. Llamar a la pantalla de derrota directamente (sin preguntar nada)
+        this._TriggerLoss();
     }
 
     _exitToMenu() {
@@ -1225,7 +1207,7 @@ class CharacterControllerDemo {
             fetch('http://localhost:3000/score', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, score: this._orbsCollected, level: "Nivel 1" })
+                body: JSON.stringify({ userId, score: this._orbsCollected, level: "Nivel 2" })
             }).catch(err => console.error(err));
         }
 

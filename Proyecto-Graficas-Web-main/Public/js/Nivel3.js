@@ -901,19 +901,14 @@ class CharacterControllerDemo {
     }
 
     _TriggerLoss() {
-        if (this._isDead || this._gameWon) return;
-        this._isDead = true;
+        if (this._isDead || this._gameWon) return; // No hacer nada si ya terminó
+        this._isDead = true; // Usamos la variable que ya tenías
+
         const overlay = document.getElementById("lose-screen");
         if (overlay) overlay.classList.add("active");
-        clearInterval(this._temporizador);
-        if (this._controls) this._controls._input._keys = {};
 
-        const playerName = prompt("¡Perdiste! Ingresa tu nombre:");
-        fetch('http://localhost:3000/score', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: playerName, score: this._orbsCollected })
-        });
+        clearInterval(this._temporizador);
+        if (this._controls) this._controls._input._keys = {}; // Detener movimiento
     }
 
     _TriggerWin() {
@@ -935,7 +930,7 @@ class CharacterControllerDemo {
             fetch('http://localhost:3000/score', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, score: this._orbsCollected, level: "Nivel 1" })
+                body: JSON.stringify({ userId, score: this._orbsCollected, level: "Nivel 3" })
             }).catch(err => console.error(err));
         }
 

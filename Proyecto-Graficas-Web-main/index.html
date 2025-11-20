@@ -68,7 +68,7 @@
             <button class="menu-button" id="jugar-button">Jugar</button>
             <button class="menu-button" id="options-button">Opciones</button>
             <button class="menu-button" id="score-button">Puntuaciones</button>
-            <button class="menu-button" id="post-button">Publicación</button>
+            <!-- <button class="menu-button" id="post-button">Publicación</button> -->
             <button class="menu-button" id="back-to-menu-button">Salir</button>
         </div>
     </div>
@@ -114,11 +114,27 @@
         <button class="menu-button" id="back-from-options">Regresar</button>
     </div>
 
-    <div id="scoreModal" class="modal" style="display:none;">
-        <div class="modal-content">
+<div id="scoreModal" class="modal" style="display:none;">
+        <div class="modal-content large-modal">
             <span id="closeScoreModal" class="close">&times;</span>
-            <h2>Puntuaciones</h2>
-            <ul id="scoreList"></ul>
+            <h2>🏆 TABLA DE LÍDERES 🏆</h2>
+            
+            <div class="scores-container" style="display: flex; justify-content: space-around; gap: 10px;">
+                <div style="flex: 1;">
+                    <h3 style="color: #00d1ff;">Nivel 1</h3>
+                    <ul id="list-nivel1" style="list-style: none; padding: 0; text-align: left;"></ul>
+                </div>
+                
+                <div style="flex: 1; border-left: 1px solid #555; border-right: 1px solid #555; padding: 0 10px;">
+                    <h3 style="color: #00d1ff;">Nivel 2</h3>
+                    <ul id="list-nivel2" style="list-style: none; padding: 0; text-align: left;"></ul>
+                </div>
+
+                <div style="flex: 1;">
+                    <h3 style="color: #00d1ff;">Nivel 3</h3>
+                    <ul id="list-nivel3" style="list-style: none; padding: 0; text-align: left;"></ul>
+                </div>
+            </div>
         </div>
     </div>
 
