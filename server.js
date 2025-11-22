@@ -19,12 +19,10 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- SERVIR ARCHIVOS ---
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'Proyecto-Graficas-Web-main')));
 app.use('/Proyecto-Graficas-Web-main', express.static(path.join(__dirname, 'Proyecto-Graficas-Web-main')));
 
-// --- RUTAS HTML ---
 app.get('/', (req, res) => {
     const indexPath = path.join(__dirname, 'Proyecto-Graficas-Web-main', 'index.html');
     res.sendFile(indexPath, (err) => {
@@ -61,11 +59,9 @@ const db = mysql.createConnection({
 db.connect(err => console.log(err ? 'Error DB' : 'Conectado a MySQL'));
 
 
-// ==========================================================
-// 🏆 1. API PUNTUACIONES (SCORE)
-// ==========================================================
+// API PUNTUACIONES
 
-// A) Guardar Puntuación
+// Guardar Puntuación
 app.post('/score', (req, res) => {
     const { userId, score, level } = req.body;
     const levelName = level || 'Nivel Desconocido';
@@ -78,7 +74,7 @@ app.post('/score', (req, res) => {
         });
 });
 
-// B) Consultar Top 10 por Nivel (¡AQUÍ ESTÁ LO QUE FALTABA!)
+// Consultar Top 10 por Nivel (¡AQUÍ ESTÁ LO QUE FALTABA!)
 app.get('/top-scores', async (req, res) => {
     const getTop10 = (levelName) => {
         return new Promise((resolve, reject) => {
@@ -109,9 +105,7 @@ app.get('/top-scores', async (req, res) => {
     }
 });
 
-// ==========================================================
-// 🐦 2. API TWITTER (POSTS)
-// ==========================================================
+// API TWITTER
 
 app.post('/posts', (req, res) => {
     const { username, content } = req.body;
@@ -121,7 +115,7 @@ app.post('/posts', (req, res) => {
         if (err) return res.status(500).json({ error: err });
 
         try {
-            const tweetText = `🎮 Récord de ${username}: ${content} #EchoRunner @AbranChill3D`;
+            const tweetText = `Puntuacion de ${username}: ${content} #EchoRunner`;
             const tweet = await twitterClient.v2.tweet(tweetText);
             console.log('Tweet enviado:', tweet);
             res.json({ success: true, id: result.insertId, twitter: tweet });
@@ -139,9 +133,7 @@ app.get('/posts', (req, res) => {
     });
 });
 
-// ==========================================================
-// 🔐 3. API GOOGLE (AUTH)
-// ==========================================================
+//API GOOGLE
 
 app.post('/auth/google', async (req, res) => {
     const { token } = req.body;
@@ -173,9 +165,7 @@ app.post('/auth/google', async (req, res) => {
     }
 });
 
-// ==========================================================
-// ⚡ 4. SOCKET.IO
-// ==========================================================
+//SOCKET.IO
 let players = {};
 
 io.on('connection', (socket) => {
@@ -217,8 +207,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// ==========================================================
-// 🚀 INICIAR
+// INICIAR
 const PORT = 3000;
 httpServer.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);

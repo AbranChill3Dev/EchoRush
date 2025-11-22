@@ -50,6 +50,8 @@ class BasicCharacterController {
         this._soundJumpCooldown = 0.0;
         // --------------------------------------------------------------------
 
+        this._speedMultiplier = 1.0;
+
         this._platforms = params.platforms || [];
         this._game = params.game;
         this._platformBox = new THREE.Box3();
@@ -185,6 +187,8 @@ class BasicCharacterController {
 
         const acc = this._acceleration.clone();
         if (this._input._keys.shift) acc.multiplyScalar(3.0);
+
+        acc.multiplyScalar(this._speedMultiplier);
 
         if (this._input._keys.forward) velocity.z += acc.z * timeInSeconds;
         if (this._input._keys.backward) velocity.z -= acc.z * timeInSeconds;
@@ -527,6 +531,52 @@ class CharacterControllerDemo {
         light = new THREE.AmbientLight(0xFFFFFF, 0.4);
         this._scene.add(light);
 
+        // --- CÓDIGO NUEVO: POWERUPS DE VELOCIDAD (VERDES) ---
+        this._speedPowerups = []; 
+
+        const speedLoader = new FBXLoader();
+        speedLoader.setPath('./Resources/Modelos/Poweups/'); // Ajusta si es necesario
+
+        // 1. Creamos el material VERDE NEÓN
+        const greenMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00FF00, // Verde Puro
+            emissive: 0x004400, // Brillo propio verde oscuro
+            roughness: 0.2,
+            metalness: 0.8
+        });
+
+        speedLoader.load('velocidad.fbx', (fbx) => {
+            fbx.scale.setScalar(0.05); // Ajusta tamaño si es necesario
+            
+            fbx.traverse(c => {
+                if (c.isMesh) {
+                    c.castShadow = true;
+                    c.receiveShadow = true;
+                    // 2. APLICAMOS EL COLOR VERDE
+                    c.material = greenMaterial; 
+                }
+            });
+
+            // 3. POSICIONES CALCULADAS DENTRO DEL LABERINTO
+            // Basadas en tu mapa donde hay ceros (Caminos)
+            const positions = [
+                // (Columna - 7) * 40, Altura, Fila * 40
+                new THREE.Vector3(-120, 5, 40),   // Fila 1, Col 4
+                new THREE.Vector3(240, 5, 80),    // Fila 2, Col 13
+                new THREE.Vector3(-240, 5, 200),  // Fila 5, Col 1 (Esquina izquierda)
+                new THREE.Vector3(40, 5, 440),    // Fila 11, Col 8 (Centro abajo)
+                new THREE.Vector3(-120, 5, 520)   // Fila 13, Col 4 (Cerca del final)
+            ];
+
+            for (const pos of positions) {
+                const clone = fbx.clone();
+                clone.position.copy(pos);
+                this._scene.add(clone);
+                this._speedPowerups.push(clone);
+            }
+        });
+        // --------------------------------------------------------
+
         const controls = new OrbitControls(this._camera, this._threejs.domElement);
         controls.target.set(0, 10, 0);
         controls.enabled = false;
@@ -763,6 +813,43 @@ class CharacterControllerDemo {
         }
     }
 
+    // --- NUEVO MÉTODO PARA VELOCIDAD ---
+    _CheckSpeedPowerups() {
+        if (!this._controls || !this._controls._target || !this._speedPowerups) return;
+
+        const playerPos = this._controls._target.position;
+
+        for (const powerup of this._speedPowerups) {
+            if (powerup.visible === false) continue;
+
+            // Animación: rotar rápido
+            powerup.rotation.y += 0.1;
+
+            // Detectar colisión (Radio de 4 unidades)
+            if (playerPos.distanceTo(powerup.position) < 4.0) {
+                console.log("¡VELOCIDAD X2 ACTIVADA!");
+
+                // 1. Desaparecer
+                powerup.visible = false;
+
+                // 2. Aumentar Velocidad (x2)
+                this._controls._speedMultiplier = 2.0;
+
+                // 3. Sonido (Reutilizamos el de orbe o salto)
+                if (this._sounds && this._sounds['orb']) {
+                     if (this._sounds['orb'].isPlaying) this._sounds['orb'].stop();
+                     this._sounds['orb'].play();
+                }
+
+                // 4. Duración: 10 Segundos
+                setTimeout(() => {
+                    console.log("Velocidad normal restaurada");
+                    if(this._controls) this._controls._speedMultiplier = 1.0; 
+                }, 10000); 
+            }
+        }
+    }
+
     _UpdateCamera() {
         if (!this._controls._target) return;
 
@@ -858,6 +945,9 @@ class CharacterControllerDemo {
 
         this._CheckCollisions();
         this._CheckBossEncounter();
+
+        this._CheckSpeedPowerups();
+        
         this._UpdateCamera();
 
         // --- MULTIJUGADOR: Enviar datos al servidor ---

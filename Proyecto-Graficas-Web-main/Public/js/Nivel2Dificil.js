@@ -119,9 +119,9 @@ class BasicCharacterController {
             this._soundJumpCooldown -= timeInSeconds;
         }
 
+
         this._stateMachine.Update(timeInSeconds, this._input);
 
-        // --- LÓGICA DE SONIDO (AÑADIDO) ---
         const sounds = this._gameRef ? this._gameRef._sounds : null;
 
         if (sounds) {
@@ -197,6 +197,7 @@ class BasicCharacterController {
 
         controlObject.quaternion.copy(_R);
 
+        // --- CÓDIGO DE SALTO Y GRAVEDAD (SIN CAMBIOS) ---
         if (this._input._keys.space && this._onGround) {
             // AHORA MULTIPLICAMOS LA FUERZA
             this._velocity.y = this._jumpForce * this._jumpMultiplier;
@@ -673,8 +674,6 @@ class CharacterControllerDemo {
         controls.enabled = false; // <-- Deshabilitado
         controls.update();
 
-        this._jumpPowerups = []; 
-
         const jumpLoader = new FBXLoader();
         jumpLoader.setPath('./Resources/Modelos/Poweups/'); 
 
@@ -686,7 +685,7 @@ class CharacterControllerDemo {
             metalness: 0.5   // Que parezca metálico
         });
 
-        jumpLoader.load('velocidad.fbx', (fbx) => {
+        jumpLoader.load('vedad.fbx', (fbx) => {
             fbx.scale.setScalar(0.03); 
             
             fbx.traverse(c => {
@@ -733,7 +732,6 @@ class CharacterControllerDemo {
         metalTexture.wrapS = THREE.RepeatWrapping;
         metalTexture.wrapT = THREE.RepeatWrapping;
 
-
         // 1. Crear la plataforma inicial (larga en X)
         const initialPlatformGeo = new THREE.BoxGeometry(80, 2, 50);
 
@@ -754,50 +752,87 @@ class CharacterControllerDemo {
         this._scene.add(initialPlatform);
         this._platforms.push(initialPlatform); // ¡Añadir al array de colisión!
 
-        // 2. Crear las plataformas intermedias
-        const platformGeometry = new THREE.BoxGeometry(20, 2, 20); // Geometría estándar
+// 2. Crear las plataformas intermedias (CAMINO "SERPIENTE" JUGABLE)
+        const platformGeometry = new THREE.BoxGeometry(20, 2, 20);
+        
+        const numPlatforms = 30; // Mantenemos 30 plataformas
 
-        const numPlatforms = 14;
-        const spacingZ = 45.0;
-        let lastZ = 0.0; // La Z de la plataforma inicial
+        // --- CÁLCULO DE ESPACIADO PARA LLEGAR AL JEFE (Z ≈ 745) ---
+        // La plataforma inicial está en Z=0. Necesitamos cubrir 735 unidades con 30 saltos.
+        // 735 / 30 saltos = 24.5. Usaremos 24.5 como espaciado base.
+        const BASE_SPACING_Z = 24.5;
+        
+        let lastX = 0.0; 
+        let lastY = 0.0; 
+        let lastZ = 0.0; 
+
+        // Variable para controlar la dirección de la altura
+        let currentDirectionY = 1; // 1 = sube, -1 = baja
 
         for (let i = 0; i < numPlatforms; i++) {
 
             const platformTexture = metalTexture.clone();
             platformTexture.needsUpdate = true;
-            platformTexture.repeat.set(2, 2); // Repetir 2x2 en esta plataforma (20/10)
-            const platformMaterial = new THREE.MeshStandardMaterial({
-                map: platformTexture
-            });
+            platformTexture.repeat.set(2, 2);
+            const platformMaterial = new THREE.MeshStandardMaterial({ map: platformTexture });
 
             const platform = new THREE.Mesh(platformGeometry, platformMaterial);
 
-            const newY = 0.0;
-            // Nueva Z basada en la anterior + espaciado
-            const newZ = lastZ + spacingZ;
+            // --- LÓGICA ZIG-ZAG EQUILIBRADA Y JUGABLE ---
+            
+            // 1. Lado (Par = Izquierda / Impar = Derecha)
+            const direction = (i % 2 === 0) ? -1 : 1; 
 
-            platform.position.set(0, newY, newZ);
+            // Distancia lateral: Entre 12 y 18 unidades del centro (poco movimiento)
+            const offsetFromCenter = 12 + (Math.random() * 6);
+            const newX = offsetFromCenter * direction; // Fija X en el zig-zag
 
-            lastZ = newZ; // Guardamos la Z
+            // 2. Altura (Y): Variación suave y controlada
+            
+            // Variación en altura: Entre 3 y 8 unidades (fácilmente saltables con tu fuerza de 50)
+            const heightChange = 3 + (Math.random() * 5); 
+            
+            let newY = lastY + (heightChange * currentDirectionY);
+
+            // Invertimos la dirección de la altura para el siguiente salto
+            currentDirectionY *= -1; 
+            
+            // Límites de altura totales
+            if (newY > 30) { newY = 25; currentDirectionY = -1; }
+            if (newY < -10) { newY = -5; currentDirectionY = 1; } 
+
+            // Distancia frontal: Ligera variación para que no se vea repetitivo
+            const zVariation = (Math.random() - 0.5) * 5; // +/- 2.5 unidades
+            const newZ = lastZ + BASE_SPACING_Z + zVariation;
+
+            platform.position.set(newX, newY, newZ);
+
+            // Actualizamos para la siguiente
+            lastX = newX;
+            lastY = newY;
+            lastZ = newZ;
 
             platform.castShadow = true;
             platform.receiveShadow = true;
             this._scene.add(platform);
-            this._platforms.push(platform); // Añadir al array de colisión
+            this._platforms.push(platform);
         }
-
+        
+        // --- PLATAFORMA FINAL (BOSS) ---
+        // El punto objetivo de la hitbox es Z ≈ 745.
+        // La última plataforma (lastZ) debería estar muy cerca de 735.
+        // Usamos la posición final (lastX, lastY) para una conexión perfecta.
+        
         const finalPlatformGeo = new THREE.BoxGeometry(150, 2, 250);
-
         const finalTexture = metalTexture.clone();
         finalTexture.needsUpdate = true;
-        finalTexture.repeat.set(20, 20); // <-- REPETICIÓN AJUSTADA (200/10)
-        const finalPlatformMat = new THREE.MeshStandardMaterial({
-            map: finalTexture
-        });
+        finalTexture.repeat.set(20, 20);
+        const finalPlatformMat = new THREE.MeshStandardMaterial({ map: finalTexture });
 
         const finalPlatform = new THREE.Mesh(finalPlatformGeo, finalPlatformMat);
-
-        finalPlatform.position.set(0, 0.0, lastZ + 150);
+        
+        // Conectamos: Adelantamos solo 30 unidades más para asegurar que caiga en la zona del Jefe (Z=745)
+        finalPlatform.position.set(lastX, lastY, lastZ + 30); 
 
         finalPlatform.castShadow = true;
         finalPlatform.receiveShadow = true;
@@ -808,7 +843,6 @@ class CharacterControllerDemo {
         this._mixers = [];
         this._previousRAF = null;
 
-        // Nuevas variables para el seguimiento de la cámara (TU CÁMARA)
         this._cameraTarget = new THREE.Vector3();
         this._cameraOffset = new THREE.Vector3(0, 6, -15);
 
@@ -955,8 +989,7 @@ class CharacterControllerDemo {
                 if (counter) counter.textContent = `Orbes: ${this._orbsCollected}`;
 
                 // Actualiza la barra de energía
-                this._actualizarBarraEnergia(); // Nueva función
-                // --- FIN DE LÓGICA MOVIDA AQUÍ ---
+                this._actualizarBarraEnergia();
             }
         }
     }
@@ -1019,17 +1052,15 @@ class CharacterControllerDemo {
         this._camera.position.lerp(tempOffset, 0.1); // Usa lerp para un movimiento más suave
         this._camera.lookAt(this._cameraTarget);
     }
-    // ====================================================================
-    // FIN DE TU LÓGICA DE CÁMARA
-    // ====================================================================
+
 
     _LoadAnimatedModel() {
         const params = {
             camera: this._camera,
             scene: this._scene,
-            platforms: this._platforms, // <-- Le pasamos el array de plataformas
+            platforms: this._platforms, // Le pasamos el array de plataformas
             game: this,
-            sounds: this._sounds                  // <-- Le pasamos la instancia del juego
+            sounds: this._sounds                  // Le pasamos la instancia del juego
         }
         this._controls = new BasicCharacterController(params);
     }
@@ -1258,9 +1289,6 @@ class CharacterControllerDemo {
             twitterBtn.style.marginTop = "10px";
             twitterBtn.style.cursor = "pointer";
 
-            // --- AQUÍ ESTÁ LA DEPURACIÓN ---
-            // ... dentro de _TriggerWin ...
-
             twitterBtn.onclick = () => {
                 const socialModal = document.getElementById('socialModal');
                 const postInput = document.getElementById('postContent');
@@ -1279,7 +1307,7 @@ class CharacterControllerDemo {
                     // 3. LLENAR AUTOMÁTICAMENTE EL MENSAJE
                     // Aquí defines qué dirá el tweet
                     if (postInput) {
-                        postInput.value = `¡He completado el ${nivel}!\n\n👤 Jugador: ${nombre}\n💎 Puntuación: ${puntos} orbes\n\n¿Podrás superarme?`;
+                        postInput.value = `¡He completado el ${nivel}! Dificil\n\n👤 Jugador: ${nombre}\n💎 Puntuación: ${puntos} orbes\n\n¿Podrás superarme?`;
                     }
 
                     // Llenar el campo de usuario (visual)
@@ -1482,7 +1510,6 @@ class CharacterControllerDemo {
             fbx.scale.setScalar(0.05);
             fbx.traverse(c => { c.castShadow = true; });
 
-            // Usamos data.username (que viene del servidor) o "Jugador" por defecto
             const nameLabel = this._createNameLabel(data.username || "Jugador");
             fbx.add(nameLabel); // Pegamos el cartel al personaje
 

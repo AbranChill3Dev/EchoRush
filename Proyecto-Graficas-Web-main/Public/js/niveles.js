@@ -29,6 +29,8 @@ class BasicCharacterController {
         this._acceleration = new THREE.Vector3(1, 0.25, 50.0);
         this._velocity = new THREE.Vector3(0, 0, 0);
 
+        this._speedMultiplier = 1.0;
+
         this._soundJumpCooldown = 0.0; // Temporizador para el salto
         this._gameRef = params.game;
 
@@ -287,6 +289,26 @@ class BasicCharacterController {
         );
         this._colliders.push(wallBox33);
 
+        // Centro: (24, 0, 149)
+        const wallBox34 = new THREE.Box3(
+            new THREE.Vector3(21, -3, 146),
+            new THREE.Vector3(27, 3, 152)
+        );
+        this._colliders.push(wallBox34);
+
+
+        const V_min = new THREE.Vector3(-99, -5, -170);
+        const V_max = new THREE.Vector3(99, 15, -80);
+        const myNewBox = new THREE.Box3(V_min, V_max);
+        this._colliders.push(myNewBox);
+
+        const V_min_colision = new THREE.Vector3(-266, 1, 288);
+        const V_max_colision = new THREE.Vector3(197, 15, 337);
+        const myNewBox1 = new THREE.Box3(V_min_colision, V_max_colision);
+        this._colliders.push(myNewBox1);
+
+
+
     }
 
     _LoadModels() {
@@ -396,6 +418,11 @@ class BasicCharacterController {
         const _R = controlObject.quaternion.clone();
 
         const acc = this._acceleration.clone();
+
+        // --- AGREGA ESTA LÍNEA AQUÍ ---
+        acc.multiplyScalar(this._speedMultiplier);
+        // ------------------------------
+
         if (this._input._keys.shift) {
             acc.multiplyScalar(3.0);
         }
@@ -759,6 +786,8 @@ class CharacterControllerDemo {
         this._orbSpawner = 0;
         this._orbsCollected = 0; // ← inicialización
 
+        this._fireDamageCooldown = 0.0;
+
         this._fireSystem = null;
         this._explosions = [];
 
@@ -853,7 +882,62 @@ class CharacterControllerDemo {
             }
         );
 
-        // --- FIN DEL CÓDIGO ---
+        // --- CÓDIGO ACTUALIZADO: MÚLTIPLES POWERUPS ---
+        // 1. ¡IMPORTANTE! Crea la lista ANTES de cargar nada
+        // Si no pones esto, el juego intentará leer una lista que no existe y dará pantalla negra.
+        this._powerups = [];
+
+        // 2. Configura el cargador
+        const powerupLoader = new FBXLoader();
+        powerupLoader.setPath('./Resources/Modelos/Poweups/'); // Verifica que esta carpeta exista
+
+        const debugMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00FF00, // Verde puro
+            // wireframe: true // DESCOMENTA ESTO SI QUIERES VER SOLO LAS LÍNEAS
+        });
+
+        // 3. Carga el modelo
+        powerupLoader.load('X2.fbx', (fbx) => {
+            console.log("Modelo de velocidad cargado correctamente"); // Mensaje de control
+
+            fbx.scale.setScalar(0.015); // Ajusta el tamaño si es necesario
+
+            fbx.traverse(c => {
+                if (c.isMesh) {
+                    c.castShadow = true;
+                    c.receiveShadow = true;
+                    c.material = debugMaterial;
+                }
+            });
+
+            // Coordenadas donde quieres los items
+            const positions = [
+                new THREE.Vector3(67, 2, 149),
+                new THREE.Vector3(179, 2, -87),
+                new THREE.Vector3(-266, 2, 7),
+                new THREE.Vector3(-50, 2, 25),
+            ];
+
+            for (const pos of positions) {
+                const clone = fbx.clone();
+                clone.position.copy(pos);
+
+                // Animación opcional: un poco de rotación aleatoria
+                // clone.rotation.y = Math.random() * Math.PI;
+
+                this._scene.add(clone);
+                this._powerups.push(clone);
+            }
+        },
+            // 4. (Opcional) Callback de progreso
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total * 100) + '% cargado');
+            },
+            // 5. Callback de ERROR (Esto te dirá si la ruta está mal)
+            (error) => {
+                console.error('Error al cargar velocidad.fbx:', error);
+            });
+        // -----------------------------------------------------
 
         // Instancia el OrbSpawner
         this._orbSpawner = new OrbSpawner({
@@ -867,6 +951,26 @@ class CharacterControllerDemo {
             // Posición fija que pediste
             position: new THREE.Vector3(10, 0, 10)
         });
+
+        this._fires = []; // Lista para guardar los fuegos
+
+        const cantidadFuegos = 30; // ¡Pon aquí cuantos quieras!
+        const rangoMapa = 250;     // Que tan dispersos están (ajusta según tu mapa)
+
+        for (let i = 0; i < cantidadFuegos; i++) {
+            // Posición aleatoria (Math.random() va de 0 a 1)
+            // (Math.random() - 0.5) * 2 nos da un número entre -1 y 1
+            const x = (Math.random() - 0.5) * 2 * rangoMapa;
+            const z = (Math.random() - 0.5) * 2 * rangoMapa;
+
+            const fire = new FireParticleSystem({
+                scene: this._scene,
+                count: 100, // Bajamos un poco la cantidad de partículas por fuego para que no se trabe
+                position: new THREE.Vector3(x, 0, z)
+            });
+
+            this._fires.push(fire);
+        }
 
         // --- FIN DEL CÓDIGO DE FUEGO ---
 
@@ -1070,6 +1174,52 @@ class CharacterControllerDemo {
         }
     }
 
+    // --- NUEVO MÉTODO PARA EL POWERUP ---
+    // --- MÉTODO ACTUALIZADO PARA REVISAR MÚLTIPLES POWERUPS ---
+    _CheckPowerups() {
+        if (!this._controls || !this._controls._target || !this._powerups) return;
+
+        const playerPos = this._controls._target.position;
+
+        // Recorremos cada powerup de la lista
+        for (const powerup of this._powerups) {
+
+            // Si no es visible, ya lo agarramos, pasamos al siguiente
+            if (powerup.visible === false) continue;
+
+            // 1. Animación: Hacemos que giren todos
+            powerup.rotation.y += 0.05;
+            powerup.rotation.z += 0.02;
+
+            // 2. Revisamos distancia
+            if (playerPos.distanceTo(powerup.position) < 3.0) {
+                console.log("¡PowerUp de Velocidad obtenido en: " + powerup.position.x + "," + powerup.position.z);
+
+                // Ocultar ESTE powerup específico
+                powerup.visible = false;
+
+                // Aplicar velocidad al jugador
+                this._controls._speedMultiplier = 1.5;
+
+                // Sonido
+                if (this._sounds && this._sounds['orb']) {
+                    if (this._sounds['orb'].isPlaying) this._sounds['orb'].stop();
+                    this._sounds['orb'].play();
+                }
+
+                // Temporizador para quitar el efecto (10 segundos)
+                // Nota: Si agarras otro mientras tienes el efecto, el timer anterior 
+                // podría quitarte la velocidad antes de tiempo. Para un sistema simple está bien,
+                // pero si quieres que se reinicie el tiempo, avísame.
+                setTimeout(() => {
+                    // Solo quitamos la velocidad si no hemos agarrado otro recientemente 
+                    // (por simplicidad, aquí lo reseteamos directo)
+                    if (this._controls) this._controls._speedMultiplier = 1.0;
+                }, 10000);
+            }
+        }
+    }
+
     // ====================================================================
 
     _UpdateCamera() {
@@ -1236,6 +1386,9 @@ class CharacterControllerDemo {
         // 6. Chequeos de Juego
         this._CheckCollisions();      // Recolección de orbes
         this._CheckBossEncounter();   // Jefe final
+
+        this._CheckPowerups();
+
         this._UpdateCamera();         // Mover la cámara
 
         // 7. LÓGICA MULTIJUGADOR (CORREGIDA)
@@ -1258,6 +1411,97 @@ class CharacterControllerDemo {
                 anim: currentAnim
             });
         }
+
+        // 1. Actualizar el temporizador de inmunidad (cooldown)
+        if (this._fireDamageCooldown > 0) {
+            this._fireDamageCooldown -= timeElapsedS;
+        }
+
+        // ... dentro de _Step ...
+
+        // --- ACTUALIZAR TODOS LOS FUEGOS ---
+        if (this._fires) {
+            this._fires.forEach(fire => {
+                fire.update(timeElapsedS);
+            });
+        }
+        // -----------------------------------
+
+        // B) Detectar colisión con CUALQUIER fuego
+        if (this._controls && this._controls._target && this._fires) {
+            const playerPos = this._controls._target.position;
+            let teEstasQuemando = false;
+
+            // Revisamos uno por uno
+            for (const fire of this._fires) {
+                // Si te acercas a menos de 2.5 metros de ESTE fuego
+                if (playerPos.distanceTo(fire.emitterPosition) < 2.5) {
+                    teEstasQuemando = true;
+                    break; // Ya encontramos uno, no hace falta seguir buscando
+                }
+            }
+
+            // C) Aplicar daño si te quemas y no eres inmune
+            if (teEstasQuemando && this._fireDamageCooldown <= 0) {
+                if (this._orbsCollected > 0) {
+                    this._orbsCollected--;
+
+                    // Actualizar UI
+                    const counter = document.getElementById('orbCounter');
+                    if (counter) counter.textContent = `Orbes: ${this._orbsCollected}`;
+                    this._actualizarBarraEnergia();
+
+                    // Opcional: Sonido de daño
+                    // if (this._sounds && this._sounds['hurt']) this._sounds['hurt'].play();
+                }
+                else {
+                    // NO TIENES VIDA (0 Orbes): MUERES
+                    console.log("¡Has muerto quemado!");
+                    this._TriggerLoss();
+                }
+
+                // D) Dar inmunidad por 1.5 segundos
+                this._fireDamageCooldown = 1.5;
+            }
+        }
+
+
+        // 2. Calcular distancia al fuego
+        if (this._fireSystem && this._controls && this._controls._target) {
+            const playerPos = this._controls._target.position;
+
+            // Accedemos a la posición del emisor de partículas
+            const firePos = this._fireSystem.emitterPosition;
+
+            // Si estás a menos de 3 metros del fuego
+            if (playerPos.distanceTo(firePos) < 3.0) {
+
+                // Y si ya pasó el tiempo de inmunidad
+                if (this._fireDamageCooldown <= 0) {
+
+                    // Restar orbe si tienes alguno
+                    if (this._orbsCollected > 0) {
+                        this._orbsCollected--;
+
+                        // Actualizar UI (Texto y Barra)
+                        const counter = document.getElementById('orbCounter');
+                        if (counter) counter.textContent = `Orbes: ${this._orbsCollected}`;
+                        this._actualizarBarraEnergia();
+
+                        // Opcional: Reproducir sonido de golpe si tienes uno cargado
+                        // if (this._sounds && this._sounds['hurt']) this._sounds['hurt'].play();
+                    }
+                    else {
+                        // NO TIENES VIDA (0 Orbes): MUERES
+                        this._TriggerLoss();
+                    }
+
+                    // Reiniciar cooldown (te da 1.5 segundos de inmunidad)
+                    this._fireDamageCooldown = 1.5;
+                }
+            }
+        }
+
     }
 
     //  API
@@ -1347,10 +1591,25 @@ class CharacterControllerDemo {
             const twitterBtn = document.createElement('button');
             twitterBtn.id = 'btn-share-twitter';
             twitterBtn.innerText = "🏆 Compartir en Twitter";
+
+            // --- ESTILOS DE COLOR ---
             twitterBtn.style.backgroundColor = "#1DA1F2";
             twitterBtn.style.color = "white";
-            twitterBtn.style.marginTop = "10px";
+            twitterBtn.style.border = "2px solid white";
+            twitterBtn.style.borderRadius = "10px"; // Un poco redondeado se ve mejor flotando
+            twitterBtn.style.padding = "10px 20px";
+            twitterBtn.style.fontSize = "1.2rem";
+            twitterBtn.style.fontFamily = "'Impact', sans-serif";
             twitterBtn.style.cursor = "pointer";
+            twitterBtn.style.boxShadow = "3px 3px 5px rgba(0,0,0,0.5)";
+
+            // --- LA CLAVE: POSICIÓN ABSOLUTA (ESQUINA INFERIOR DERECHA) ---
+            twitterBtn.style.position = "absolute";
+            twitterBtn.style.bottom = "30px";  // Separación del suelo
+            twitterBtn.style.right = "30px";   // Separación de la derecha
+            twitterBtn.style.margin = "0";     // Sin márgenes que estorben
+            twitterBtn.style.zIndex = "10000"; // Aseguramos que esté encima de todo
+            // --------------------------------------------------------------
 
             // --- AQUÍ ESTÁ LA DEPURACIÓN ---
             // ... dentro de _TriggerWin ...

@@ -9,7 +9,7 @@ class MenuScene {
     _Initialize() {
         this._threejs = new THREE.WebGLRenderer({
             antialias: true,
-            alpha: true // Permite fondo transparente
+            alpha: true
         });
         this._threejs.outputEncoding = THREE.sRGBEncoding;
         this._threejs.shadowMap.enabled = true;
@@ -29,10 +29,8 @@ class MenuScene {
         const far = 1000.0;
         this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
         
-        // Posiciona la cámara al frente del personaje.
-        // Ajusta estos valores para cambiar la vista.
         this._camera.position.set(0, 1, 10);
-        this._camera.lookAt(-7.5, 5, 0); // Apunta al centro del personaje
+        this._camera.lookAt(-7.5, 5, 0);
 
         this._scene = new THREE.Scene();
         this._scene.background = new THREE.Color(0x87CEEB); 
@@ -44,7 +42,7 @@ class MenuScene {
         light.castShadow = true;
         this._scene.add(light);
 
-        light = new THREE.AmbientLight(0xFFFFFF, 0.5); // Aumenta la intensidad para mayor visibilidad
+        light = new THREE.AmbientLight(0xFFFFFF, 0.5);
         this._scene.add(light);
 
         // Plano del suelo
@@ -71,7 +69,7 @@ class MenuScene {
         // Carga el modelo principal
         loader.load('Tilin2.fbx', (model) => {
             model.scale.setScalar(0.05);
-            model.position.set(0, 0, 0); // Posiciona el personaje en el centro de la escena
+            model.position.set(0, 0, 0);
             model.traverse(c => {
                 c.castShadow = true;
             });
@@ -122,6 +120,5 @@ let _APP = null;
 
 window.addEventListener('DOMContentLoaded', () => {
     _APP = new MenuScene();
-    // Llamada a la función del nuevo archivo para inicializar la lógica del menú
     initializeMenuLogic(); 
 });

@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="/Proyecto-Graficas-Web-main/Public/css/modal.css">
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-
     <script src="/socket.io/socket.io.js"></script>
 
     <style>
@@ -26,16 +25,17 @@
             text-shadow: 2px 2px 4px #000000;
             z-index: 100;
             pointer-events: none;
-            /* Para que no estorbe al clickear */
             display: none;
-            /* Se oculta en los menús, se muestra al jugar */
         }
 
-        /* Ocultar elementos por defecto para manejarlos con JS */
-        #welcome-message,
-        #start-button {
+        #welcome-message, #start-button {
             display: none;
         }
+        
+        .scores-container { display: flex; justify-content: space-around; gap: 10px; }
+        .score-column { flex: 1; }
+        .score-column ul { list-style: none; padding: 0; text-align: left; }
+        .score-column li { border-bottom: 1px solid #444; padding: 5px; display: flex; justify-content: space-between; }
     </style>
 </head>
 
@@ -58,7 +58,8 @@
             </p>
 
             <p id="start-button" class="instrucciones" style="cursor: pointer; text-decoration: underline;">
-                > PRESIONA CLICK PARA ENTRAR < </p>
+                > PRESIONA CLICK PARA ENTRAR < 
+            </p>
         </div>
     </div>
 
@@ -66,9 +67,7 @@
         <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Logo2.png" alt="Logo" class="logo2">
         <div class="MainMenu-contenido">
             <button class="menu-button" id="jugar-button">Jugar</button>
-            <button class="menu-button" id="options-button">Opciones</button>
             <button class="menu-button" id="score-button">Puntuaciones</button>
-            <!-- <button class="menu-button" id="post-button">Publicación</button> -->
             <button class="menu-button" id="back-to-menu-button">Salir</button>
         </div>
     </div>
@@ -77,17 +76,26 @@
         <h2 class="game-menu-title">Selecciona un modo</h2>
         <div class="GameMenu-opciones">
             <div class="game-option" data-mode="solitario">
-                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Solitario.png" alt="Solitario"
-                    class="game-image">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Solitario.png" alt="Solitario" class="game-image">
                 <p>Solitario</p>
             </div>
             <div class="game-option" data-mode="multijugador">
-                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Multijugador.png" alt="Multijugador"
-                    class="game-image">
+                <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/Multijugador.png" alt="Multijugador" class="game-image">
                 <p>Multijugador</p>
             </div>
         </div>
         <button class="menu-button" id="back-to-main-menu">Regresar</button>
+    </div>
+
+    <div id="DifficultyMenu" class="MainMenu" style="display: none;">
+        <h2 style="color:white; font-family: 'Impact', sans-serif; font-size: 3rem; margin-bottom: 50px; text-shadow: 2px 2px 0px black;">
+            Selecciona la Dificultad
+        </h2>
+        <div class="MainMenu-contenido" style="margin-top: 0;">
+            <button class="menu-button" id="normal-button">Normal</button>
+            <button class="menu-button" id="hard-button" style="background-color: #ff4d4d;">Difícil</button>
+            <button class="menu-button" id="back-from-difficulty">Regresar</button>
+        </div>
     </div>
 
     <div id="LevelMenu" class="LevelMenu" style="display: none;">
@@ -114,58 +122,35 @@
         <button class="menu-button" id="back-from-options">Regresar</button>
     </div>
 
-<div id="scoreModal" class="modal" style="display:none;">
-        <div class="modal-content large-modal">
+    <div id="scoreModal" class="modal" style="display:none;">
+        <div class="modal-content large-modal" style="width: 90%; max-width: 1000px;">
             <span id="closeScoreModal" class="close">&times;</span>
-            <h2>🏆 TABLA DE LÍDERES 🏆</h2>
+            <h2>🏆 SALÓN DE LA FAMA 🏆</h2>
             
-            <div class="scores-container" style="display: flex; justify-content: space-around; gap: 10px;">
-                <div style="flex: 1;">
-                    <h3 style="color: #00d1ff;">Nivel 1</h3>
-                    <ul id="list-nivel1" style="list-style: none; padding: 0; text-align: left;"></ul>
+            <div class="scores-container">
+                <div class="score-column">
+                    <h3 style="color: #00d1ff; text-align: center;">Nivel 1</h3>
+                    <ul id="list-nivel1"></ul>
                 </div>
                 
-                <div style="flex: 1; border-left: 1px solid #555; border-right: 1px solid #555; padding: 0 10px;">
-                    <h3 style="color: #00d1ff;">Nivel 2</h3>
-                    <ul id="list-nivel2" style="list-style: none; padding: 0; text-align: left;"></ul>
+                <div class="score-column" style="border-left: 1px solid #555; border-right: 1px solid #555; padding: 0 10px;">
+                    <h3 style="color: #00d1ff; text-align: center;">Nivel 2</h3>
+                    <ul id="list-nivel2"></ul>
                 </div>
 
-                <div style="flex: 1;">
-                    <h3 style="color: #00d1ff;">Nivel 3</h3>
-                    <ul id="list-nivel3" style="list-style: none; padding: 0; text-align: left;"></ul>
+                <div class="score-column">
+                    <h3 style="color: #00d1ff; text-align: center;">Nivel 3</h3>
+                    <ul id="list-nivel3"></ul>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="socialModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span id="closeSocialModal" class="close">&times;</span>
-            <h2>Red Social</h2>
-            <input type="text" id="usernameInput" placeholder="Usuario" readonly style="background-color: #ddd;" />
-            <textarea id="postContent" placeholder="Comparte tu logro..." rows="3"></textarea>
-            <br>
-            <button id="sendPost">Publicar en Twitter</button>
-            <hr>
-            <div id="postsContainer"></div>
-        </div>
-    </div>
-
     <div id="gameContainer" style="display:none;"></div>
-
     <div id="time-counter">30</div>
 
-    <div id="orbCounter"
-        style="position: absolute; top: 20px; right: 20px; color: white; font-size: 24px; font-weight: bold; display: none;">
-        Orbes: 0
-    </div>
-
-    <div id="energy-bar" style="position: absolute; top: 20px; left: 20px; display: none;">
-        <img id="barra-energia-img" src="/Proyecto-Graficas-Web-main/Resources/UI/HUH.png" width="200">
-    </div>
-
-    <div id="audio-icon" class="audio-icon" style="display: none;"> <img
-            src="/Proyecto-Graficas-Web-main/Resources/Imagenes/SonidoOFF.png" id="audio-img">
+    <div id="audio-icon" class="audio-icon" style="display: none;"> 
+        <img src="/Proyecto-Graficas-Web-main/Resources/Imagenes/SonidoOFF.png" id="audio-img">
     </div>
 
     <audio id="background-music" loop>
@@ -177,75 +162,41 @@
     </div>
 
     <script>
-        // Variables Globales para que el juego sepa quién eres y cómo jugar
-        window.currentUser = null;      // Guardará { id, username, picture }
-        window.isMultiplayer = false;   // true = conectar a Socket.io
+        window.currentUser = null;
+        window.isMultiplayer = false;
 
-        // --- FUNCIÓN QUE LLAMA GOOGLE AL LOGUEARSE ---
         function handleCredentialResponse(response) {
-            console.log("Token recibido de Google...");
-
-            // Enviamos el token a NUESTRO backend (server.js)
+            console.log("Token recibido...");
             fetch('http://localhost:3000/auth/google', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: response.credential })
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        // LOGIN EXITOSO
-                        console.log("Usuario autenticado:", data.user);
-                        window.currentUser = data.user;
-
-                        sessionStorage.setItem('currentUser', JSON.stringify(data.user));
-
-                        // Actualizar UI del Menú Inicio
-                        document.querySelector('.g_id_signin').style.display = 'none'; // Ocultar botón Google
-                        document.getElementById('user-name').innerText = data.user.username;
-                        document.getElementById('welcome-message').style.display = 'block';
-                        document.getElementById('start-button').style.display = 'block';
-
-                        // Pre-llenar el modal social
-                        document.getElementById('usernameInput').value = data.user.username;
-                    } else {
-                        alert("Error de autenticación: " + data.message);
-                    }
-                })
-                .catch(err => console.error("Error conectando con el servidor:", err));
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    console.log("Usuario autenticado:", data.user);
+                    window.currentUser = data.user;
+                    sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+                    
+                    document.querySelector('.g_id_signin').style.display = 'none';
+                    document.getElementById('user-name').innerText = data.user.username;
+                    document.getElementById('welcome-message').style.display = 'block';
+                    document.getElementById('start-button').style.display = 'block';
+                    
+                    const userInput = document.getElementById('usernameInput');
+                    if(userInput) userInput.value = data.user.username;
+                } else {
+                    alert("Error de autenticación: " + data.message);
+                }
+            })
+            .catch(err => console.error("Error conectando con el servidor:", err));
         }
-
-        // --- LÓGICA DE SELECCIÓN DE MODO (SOLO/MULTI) ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const gameOptions = document.querySelectorAll('.game-option');
-
-            gameOptions.forEach(option => {
-                option.addEventListener('click', () => {
-                    const mode = option.getAttribute('data-mode');
-
-                    if (mode === 'multijugador') {
-                        console.log("Modo MULTIJUGADOR seleccionado");
-                        // CAMBIO IMPORTANTE: Guardar en sessionStorage
-                        sessionStorage.setItem('isMultiplayer', 'true');
-                    } else {
-                        console.log("Modo SOLITARIO seleccionado");
-                        // CAMBIO IMPORTANTE: Guardar en sessionStorage
-                        sessionStorage.setItem('isMultiplayer', 'false');
-                    }
-
-                    // Visualmente podrías marcar cuál está seleccionado aquí si quisieras
-                });
-            });
-        });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
-
     <script src="/Proyecto-Graficas-Web-main/Public/js/main.js" type="module"></script>
     <script src="/Proyecto-Graficas-Web-main/Public/js/menus.js"></script>
     <script src="/Proyecto-Graficas-Web-main/Public/js/GameManager.js"></script>
-    <script src="/Proyecto-Graficas-Web-main/Public/js/social.js"></script>
-
-</body>
-
+    </body>
 </html>

@@ -4,7 +4,7 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/GLTFLoader.js';
 
-import { OrbSpawner } from './OrbSpawner2.js';
+import { OrbSpawner } from './OrbSpawner.js';
 
 // Carga el personaje
 class BasicCharacterControllerProxy {
@@ -29,19 +29,14 @@ class BasicCharacterController {
         this._acceleration = new THREE.Vector3(1, 0.25, 50.0);
         this._velocity = new THREE.Vector3(0, 0, 0);
 
+        this._speedMultiplier = 1.0;
+
         this._soundJumpCooldown = 0.0; // Temporizador para el salto
         this._gameRef = params.game;
 
         this._gravity = new THREE.Vector3(0, -100.0, 0); // Fuerza de la gravedad
         this._jumpForce = 50.0;   // Impulso inicial del salto
-
-        this._jumpMultiplier = 1.0;
-
-        this._onGround = false;    // Indica si el personaje puede saltar
-
-        this._platforms = params.platforms || [];
-        this._game = params.game; // Para llamar a _TriggerDeath
-        this._platformBox = new THREE.Box3(); // Helper para colisiones
+        this._onGround = true;    // Indica si el personaje puede saltar
 
         this._animations = {};
         this._input = new BasicCharacterControllerInput();
@@ -50,10 +45,256 @@ class BasicCharacterController {
 
         this._LoadModels();
 
+        // 1. Define un "hitbox" para el jugador (Ancho: 1, Alto: 2, Profundidad: 1)
         this._playerBox = new THREE.Box3(
             new THREE.Vector3(-0.5, 0.0, -0.5), // min (x, y, z)
             new THREE.Vector3(0.5, 2.0, 0.5)  // max (x, y, z)
         );
+
+        // 2. Crea un ARRAY para guardar TODAS las colisiones
+        this._colliders = [];
+
+        // Centro: (-33, 0, 47)
+        const wallBox1 = new THREE.Box3(
+            new THREE.Vector3(-36, -3, 44),
+            new THREE.Vector3(-30, 3, 50)
+        );
+        this._colliders.push(wallBox1);
+
+        // Centro: (9, 0, 0)
+        const wallBox2 = new THREE.Box3(
+            new THREE.Vector3(6, -3, -3),
+            new THREE.Vector3(12, 3, 3)
+        );
+        this._colliders.push(wallBox2);
+
+        // Centro: (36, 0, -23)
+        const wallBox3 = new THREE.Box3(
+            new THREE.Vector3(33, -3, -26),
+            new THREE.Vector3(39, 3, -20)
+        );
+        this._colliders.push(wallBox3);
+
+        // Centro: (63, 0, -47)
+        const wallBox4 = new THREE.Box3(
+            new THREE.Vector3(60, -3, -50),
+            new THREE.Vector3(66, 3, -44)
+        );
+        this._colliders.push(wallBox4);
+
+        // Centro: (98, 0, -25)
+        const wallBox5 = new THREE.Box3(
+            new THREE.Vector3(95, -3, -28),
+            new THREE.Vector3(101, 3, -22)
+        );
+        this._colliders.push(wallBox5);
+
+        // Centro: (118, 0, -57)
+        const wallBox6 = new THREE.Box3(
+            new THREE.Vector3(115, -3, -60),
+            new THREE.Vector3(121, 3, -54)
+        );
+        this._colliders.push(wallBox6);
+
+        // Centro: (151, 0, -80)
+        const wallBox7 = new THREE.Box3(
+            new THREE.Vector3(148, -3, -83),
+            new THREE.Vector3(154, 3, -77)
+        );
+        this._colliders.push(wallBox7);
+
+        // Centro: (148, 0, -143)
+        const wallBox8 = new THREE.Box3(
+            new THREE.Vector3(145, -3, -146),
+            new THREE.Vector3(151, 3, -140)
+        );
+        this._colliders.push(wallBox8);
+
+        // Centro: (156, 0, -31)
+        const wallBox9 = new THREE.Box3(
+            new THREE.Vector3(153, -3, -34),
+            new THREE.Vector3(159, 3, -28)
+        );
+        this._colliders.push(wallBox9);
+
+        // Centro: (191, 0, -20)
+        const wallBox10 = new THREE.Box3(
+            new THREE.Vector3(188, -3, -23),
+            new THREE.Vector3(194, 3, -17)
+        );
+        this._colliders.push(wallBox10);
+
+        // Centro: (177, 0, 34)
+        const wallBox11 = new THREE.Box3(
+            new THREE.Vector3(174, -3, 31),
+            new THREE.Vector3(180, 3, 37)
+        );
+        this._colliders.push(wallBox11);
+
+        // Centro: (151, 0, 58)
+        const wallBox12 = new THREE.Box3(
+            new THREE.Vector3(148, -3, 55),
+            new THREE.Vector3(154, 3, 61)
+        );
+        this._colliders.push(wallBox12);
+
+        // Centro: (163, 0, 93)
+        const wallBox13 = new THREE.Box3(
+            new THREE.Vector3(160, -3, 90),
+            new THREE.Vector3(166, 3, 96)
+        );
+        this._colliders.push(wallBox13);
+
+        // Centro: (184, 0, 126)
+        const wallBox14 = new THREE.Box3(
+            new THREE.Vector3(181, -3, 123),
+            new THREE.Vector3(187, 3, 129)
+        );
+        this._colliders.push(wallBox14);
+
+        // Centro: (216, 0, 108)
+        const wallBox15 = new THREE.Box3(
+            new THREE.Vector3(213, -3, 105),
+            new THREE.Vector3(219, 3, 111)
+        );
+        this._colliders.push(wallBox15);
+
+        // Centro: (264, 0, 116)
+        const wallBox16 = new THREE.Box3(
+            new THREE.Vector3(261, -3, 113),
+            new THREE.Vector3(267, 3, 119)
+        );
+        this._colliders.push(wallBox16);
+
+        // Centro: (69, 0, 1)
+        const wallBox17 = new THREE.Box3(
+            new THREE.Vector3(66, -3, -2),
+            new THREE.Vector3(72, 3, 4)
+        );
+        this._colliders.push(wallBox17);
+
+        // Centro: (116, 0, 33)
+        const wallBox18 = new THREE.Box3(
+            new THREE.Vector3(113, -3, 30),
+            new THREE.Vector3(119, 3, 36)
+        );
+        this._colliders.push(wallBox18);
+
+        // Centro: (135, 0, 1.5)
+        const wallBox19 = new THREE.Box3(
+            new THREE.Vector3(132, -3, -1.5),
+            new THREE.Vector3(138, 3, 4.5)
+        );
+        this._colliders.push(wallBox19);
+
+        // Centro: (123, 0, 109)
+        const wallBox20 = new THREE.Box3(
+            new THREE.Vector3(120, -3, 106),
+            new THREE.Vector3(126, 3, 112)
+        );
+        this._colliders.push(wallBox20);
+
+        // Centro: (138, 0, 146)
+        const wallBox21 = new THREE.Box3(
+            new THREE.Vector3(135, -3, 143),
+            new THREE.Vector3(141, 3, 149)
+        );
+        this._colliders.push(wallBox21);
+
+        // Centro: (79, 0, 135)
+        const wallBox22 = new THREE.Box3(
+            new THREE.Vector3(76, -3, 132),
+            new THREE.Vector3(82, 3, 138)
+        );
+        this._colliders.push(wallBox22);
+
+        // Centro: (70, 0, 170)
+        const wallBox23 = new THREE.Box3(
+            new THREE.Vector3(67, -3, 167),
+            new THREE.Vector3(73, 3, 173)
+        );
+        this._colliders.push(wallBox23);
+
+        // Centro: (24, 0, 149)
+        const wallBox24 = new THREE.Box3(
+            new THREE.Vector3(21, -3, 146),
+            new THREE.Vector3(27, 3, 152)
+        );
+        this._colliders.push(wallBox24);
+
+        // Centro: (-7, 0, 122)
+        const wallBox25 = new THREE.Box3(
+            new THREE.Vector3(-10, -3, 119),
+            new THREE.Vector3(-4, 3, 125)
+        );
+        this._colliders.push(wallBox25);
+
+        // Centro: (-41, 0, 147)
+        const wallBox26 = new THREE.Box3(
+            new THREE.Vector3(-44, -3, 144),
+            new THREE.Vector3(-38, 3, 150)
+        );
+        this._colliders.push(wallBox26);
+
+        // Centro: (-73, 0, 149)
+        const wallBox27 = new THREE.Box3(
+            new THREE.Vector3(-76, -3, 146),
+            new THREE.Vector3(-70, 3, 152)
+        );
+        this._colliders.push(wallBox27);
+
+        // Centro: (-95, 0, 113)
+        const wallBox28 = new THREE.Box3(
+            new THREE.Vector3(-98, -3, 110),
+            new THREE.Vector3(-92, 3, 116)
+        );
+        this._colliders.push(wallBox28);
+
+        // Centro: (-63, 0, 79)
+        const wallBox29 = new THREE.Box3(
+            new THREE.Vector3(-66, -3, 76),
+            new THREE.Vector3(-60, 3, 82)
+        );
+        this._colliders.push(wallBox29);
+
+        // Centro: (4, 0, 47)
+        const wallBox30 = new THREE.Box3(
+            new THREE.Vector3(1, -3, 44),
+            new THREE.Vector3(7, 3, 50)
+        );
+        this._colliders.push(wallBox30);
+
+        // Centro: (49, 0, 30)
+        const wallBox31 = new THREE.Box3(
+            new THREE.Vector3(46, -3, 27),
+            new THREE.Vector3(52, 3, 33)
+        );
+        this._colliders.push(wallBox31);
+
+        // Centro: (-40, 0, 99)
+        const wallBox32 = new THREE.Box3(
+            new THREE.Vector3(-43, -3, 96),
+            new THREE.Vector3(-37, 3, 102)
+        );
+        this._colliders.push(wallBox32);
+
+        // Centro: (24, 0, 149)
+        const wallBox33 = new THREE.Box3(
+            new THREE.Vector3(21, -3, 146),
+            new THREE.Vector3(27, 3, 152)
+        );
+        this._colliders.push(wallBox33);
+
+        const V_min = new THREE.Vector3(-99, -5, -170);
+        const V_max = new THREE.Vector3(99, 15, -80);
+        const myNewBox = new THREE.Box3(V_min, V_max);
+        this._colliders.push(myNewBox);
+
+        const V_min_colision = new THREE.Vector3(-266, 1, 288);
+        const V_max_colision = new THREE.Vector3(197, 15, 337);
+        const myNewBox1 = new THREE.Box3(V_min_colision, V_max_colision);
+        this._colliders.push(myNewBox1);
+
     }
 
     _LoadModels() {
@@ -67,8 +308,6 @@ class BasicCharacterController {
 
             this._target = fbx;
             this._params.scene.add(this._target);
-
-            this._target.position.set(0, 10, 0);
 
             this._mixer = new THREE.AnimationMixer(this._target);
 
@@ -96,14 +335,13 @@ class BasicCharacterController {
     }
 
     _CheckCollisions(playerTestBox) {
-        // Itera sobre CADA colisionador en nuestro array
         for (const collider of this._colliders) {
             // Si el hitbox de prueba intersecta CUALQUIERA de ellos...
             if (playerTestBox.intersectsBox(collider)) {
-                return true; // ¡Colisión detectada! Detiene la función.
+                return true;
             }
         }
-        return false; // No se encontró ninguna colisión
+        return false;
     }
 
     Update(timeInSeconds) {
@@ -111,48 +349,37 @@ class BasicCharacterController {
             return;
         }
 
-        if (this._game && this._game._isDead) {
-            return;
-        }
+        this._stateMachine.Update(timeInSeconds, this._input);
 
-        if (this._soundJumpCooldown > 0) {
-            this._soundJumpCooldown -= timeInSeconds;
-        }
+        if (this._soundJumpCooldown > 0) this._soundJumpCooldown -= timeInSeconds;
 
         this._stateMachine.Update(timeInSeconds, this._input);
 
-        // --- LÓGICA DE SONIDO (AÑADIDO) ---
         const sounds = this._gameRef ? this._gameRef._sounds : null;
-
         if (sounds) {
             const keys = this._input._keys;
-            // Detectar si alguna tecla de movimiento está presionada
             const isMoving = keys.forward || keys.backward || keys.left || keys.right;
 
-            // CAMINAR Y CORRER
             if (isMoving && this._onGround) {
-                if (keys.shift) {
-                    // CORRIENDO: Apaga 'walk', prende 'run'
+                if (keys.shift) { // Correr
                     if (sounds['walk'] && sounds['walk'].isPlaying) sounds['walk'].stop();
                     if (sounds['run'] && !sounds['run'].isPlaying) sounds['run'].play();
-                } else {
-                    // CAMINANDO: Apaga 'run', prende 'walk'
+                } else { // Caminar
                     if (sounds['run'] && sounds['run'].isPlaying) sounds['run'].stop();
                     if (sounds['walk'] && !sounds['walk'].isPlaying) sounds['walk'].play();
                 }
-            } else {
-                // QUIETO: Apaga todo
+            } else { // Quieto
                 if (sounds['walk'] && sounds['walk'].isPlaying) sounds['walk'].stop();
                 if (sounds['run'] && sounds['run'].isPlaying) sounds['run'].stop();
             }
 
-            // SALTO (Solo si cooldown llegó a 0)
+            // Salto
             if (keys.space && this._onGround && this._soundJumpCooldown <= 0) {
                 if (sounds['jump']) {
                     if (sounds['jump'].isPlaying) sounds['jump'].stop();
                     sounds['jump'].play();
                 }
-                this._soundJumpCooldown = 1.0; // Esperar 1 segundo para volver a sonar
+                this._soundJumpCooldown = 1.0;
             }
         }
 
@@ -174,6 +401,9 @@ class BasicCharacterController {
         const _R = controlObject.quaternion.clone();
 
         const acc = this._acceleration.clone();
+
+        acc.multiplyScalar(this._speedMultiplier);
+
         if (this._input._keys.shift) {
             acc.multiplyScalar(3.0);
         }
@@ -197,66 +427,24 @@ class BasicCharacterController {
 
         controlObject.quaternion.copy(_R);
 
+        // 1. Revisa si se presiona Espacio y si estamos en el suelo
         if (this._input._keys.space && this._onGround) {
-            // AHORA MULTIPLICAMOS LA FUERZA
-            this._velocity.y = this._jumpForce * this._jumpMultiplier;
-            this._onGround = false;
+            this._velocity.y = this._jumpForce; // Aplica la fuerza del salto
+            this._onGround = false;           // Ya no estamos en el suelo
         }
+
+        // 2. Aplica la gravedad a la velocidad vertical en cada frame
         this._velocity.y += this._gravity.y * timeInSeconds;
+
+        // 3. Mueve el personaje verticalmente
         controlObject.position.y += this._velocity.y * timeInSeconds;
-        // --- FIN DE SALTO Y GRAVEDAD ---
 
-
-        // --- INICIO DE LA LÓGICA DE PLATAFORMA CORREGIDA ---
-
-        // 4. Detecta si el personaje ha aterrizado en una plataforma
-        let potentialGroundY = -Infinity; // Empezamos asumiendo que no hay suelo
-        const cPos = controlObject.position;
-
-        const playerHalfWidth = 0.5;
-        const playerHalfDepth = 0.5;
-
-        if (this._platforms && this._velocity.y <= 0) { // Solo checa si estamos cayendo
-            for (const platform of this._platforms) {
-
-                this._platformBox.setFromObject(platform);
-
-                // Comprobamos si el jugador está horizontalmente sobre la plataforma
-                const isCollidingX = cPos.x >= this._platformBox.min.x - playerHalfWidth &&
-                    cPos.x <= this._platformBox.max.x + playerHalfWidth;
-
-                const isCollidingZ = cPos.z >= this._platformBox.min.z - playerHalfDepth &&
-                    cPos.z <= this._platformBox.max.z + playerHalfDepth;
-
-                if (isCollidingX && isCollidingZ &&
-                    cPos.y <= this._platformBox.max.y) {
-
-                    // ...registramos la altura de su superficie.
-                    potentialGroundY = Math.max(potentialGroundY, this._platformBox.max.y);
-                }
-            }
+        // 4. Detecta si el personaje ha aterrizado (y <= 0)
+        if (controlObject.position.y <= 0.0) {
+            controlObject.position.y = 0.0;    // Lo coloca exactamente en el suelo
+            this._velocity.y = 0;              // Detiene la velocidad vertical
+            this._onGround = true;             // Permite volver a saltar
         }
-
-        // 5. Aplicar colisión
-        // Si los pies del jugador (cPos.y) han cruzado la superficie de la plataforma Y el jugador está cayendo...
-        if (cPos.y <= potentialGroundY) {
-            this._velocity.y = 0; // Detiene la caída
-            controlObject.position.y = potentialGroundY; // Lo coloca exactamente sobre la plataforma
-            this._onGround = true;
-        } else {
-            this._onGround = false; // Si está en el aire, no está en el suelo
-        }
-
-        // 6. Detectar caída al vacío (aumentamos el umbral por si las plataformas bajan mucho)
-        if (controlObject.position.y < -25) {
-            console.log("¡Caíste al vacío!");
-            this._velocity.set(0, 0, 0); // Detenemos al personaje
-            this._onGround = true; // Prevenimos saltos mientras morimos
-            if (this._game) {
-                this._game._TriggerDeath(); // Llamamos a la función de "perdiste"
-            }
-        }
-        // --- FIN DE LA LÓGICA DE PLATAFORMA CORREGIDA ---
 
 
         const oldPosition = new THREE.Vector3();
@@ -273,10 +461,34 @@ class BasicCharacterController {
         sideways.multiplyScalar(velocity.x * timeInSeconds);
         forward.multiplyScalar(velocity.z * timeInSeconds);
 
-        controlObject.position.add(forward);
-        controlObject.position.add(sideways);
 
-        oldPosition.copy(controlObject.position);
+        // --- INICIO DE LA LÓGICA DE COLISIÓN (CON ARRAY) ---
+
+        // 1. Obtenemos el "hitbox" actual del jugador en su posición
+        const playerAABB = this._playerBox.clone().translate(controlObject.position);
+
+        // 2. Probamos movernos solo en el eje Z (adelante/atrás)
+        const testAABB_Z = playerAABB.clone().translate(forward);
+
+        // 3. Revisamos si choca con CUALQUIER objeto
+        if (!this._CheckCollisions(testAABB_Z)) {
+            // Si NO choca, permitimos el movimiento en Z
+            controlObject.position.add(forward);
+        }
+
+        // 4. Actualizamos el "hitbox" a la nueva posición (después de mover en Z)
+        const playerAABB_PostZ = this._playerBox.clone().translate(controlObject.position);
+
+        // 5. Probamos movernos solo en el eje X (lados)
+        const testAABB_X = playerAABB_PostZ.clone().translate(sideways);
+
+        // 6. Revisamos si choca con CUALQUIER objeto
+        if (!this._CheckCollisions(testAABB_X)) {
+            // Si NO choca, permitimos el movimiento en X
+            controlObject.position.add(sideways);
+        }
+
+        // --- FIN DE LA LÓGICA DE COLISIÓN ---
 
         if (this._mixer) {
             this._mixer.update(timeInSeconds);
@@ -298,7 +510,6 @@ class BasicCharacterControllerInput {
             space: false,
             shift: false,
         };
-
         document.addEventListener('keydown', (e) => this._onKeyDown(e), false);
         document.addEventListener('keyup', (e) => this._onKeyUp(e), false);
     }
@@ -553,39 +764,37 @@ class CharacterControllerDemo {
         this._orbSpawner = 0;
         this._orbsCollected = 0; // ← inicialización
 
+        this._fireDamageCooldown = 0.0;
+
         this._fireSystem = null;
         this._explosions = [];
 
         this._timeLeft = 30; // Empezamos con 30 segundos
         this._temporizador = null;
 
-        // --- AÑADE ESTAS LÍNEAS ---
         this._gameWon = false;         // Para saber si ya ganamos
         this._bossDefeated = false;    // Para que la animación solo suene una vez
         this._tiempoSinRecolectar = 0;
         this._temporizador = null;
 
+        // Definimos la hitbox del jefe aquí
         this._bossHitbox = new THREE.Box3(
-            new THREE.Vector3(-4, 0, 735),  // Min (x, y, z) - Un poco antes del jefe
-            new THREE.Vector3(16, 10, 755)  // Max (x, y, z) - Un poco después
+            new THREE.Vector3(-10, -5, -78),
+            new THREE.Vector3(10, 5, -58)
         );
 
-        // --- MULTIJUGADOR: Variables ---
-        this._remotePlayers = {};
-        this._socket = null;
+        this._remotePlayers = {}; // Aquí guardaremos los modelos de los otros
+        this._socket = null;      // Aquí guardaremos la conexión
 
         this._isDead = false;
 
         this._Initialize();
 
-        // --- SISTEMA DE AUDIO (AÑADIDO) ---
         this._listener = new THREE.AudioListener();
-        this._camera.add(this._listener); // Pegamos los oídos a la cámara
+        this._camera.add(this._listener); // Pegamos el oído a la cámara
+        this._sounds = {}; // Diccionario para guardar los sonidos
 
-        this._sounds = {}; // Aquí guardamos los sonidos cargados
         const audioLoader = new THREE.AudioLoader();
-
-        // Función auxiliar para cargar rápido
         const loadSound = (name, path, loop, volume) => {
             const sound = new THREE.Audio(this._listener);
             audioLoader.load(path, (buffer) => {
@@ -593,12 +802,12 @@ class CharacterControllerDemo {
                 sound.setLoop(loop);
                 sound.setVolume(volume);
                 this._sounds[name] = sound;
-                if (name === 'bgm') sound.play(); // Autoplay música de fondo
+                if (name === 'bgm') sound.play(); // Reproducir música automáticamente
             });
         };
 
-        // CARGAR SONIDOS ESPECÍFICOS
-        loadSound('bgm', './Resources/Audio/nivel2.mp3', true, 0.07);
+        // Lista de archivos a cargar
+        loadSound('bgm', './Resources/Audio/nivel1.mp3', true, 0.07);
         loadSound('walk', './Resources/Audio/pasos.mp3', true, 0.25);
         loadSound('run', './Resources/Audio/correr.mp3', true, 0.25);
         loadSound('jump', './Resources/Audio/salto.mp3', false, 0.1);
@@ -631,21 +840,106 @@ class CharacterControllerDemo {
 
         this._scene = new THREE.Scene();
 
-        this._scene.background = new THREE.Color(0x000000);
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(
+            './Resources/Imagenes/Sky.jpg', // Ruta a tu imagen de 360°
+            (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
 
-        this._platforms = [];
+                const geometry = new THREE.SphereGeometry(500, 60, 40);
+                geometry.scale(-1, 1, 1);
 
+                const material = new THREE.MeshBasicMaterial({ map: texture });
+
+                this._skyboxMesh = new THREE.Mesh(geometry, material);
+                this._scene.add(this._skyboxMesh);
+                this._scene.environment = texture;
+            }
+        );
+
+        // 2. Configura el cargador
+        const powerupLoader = new FBXLoader();
+        powerupLoader.setPath('./Resources/Modelos/Poweups/'); // Verifica que esta carpeta exista
+
+        const debugMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00FF00, // Verde puro
+            // wireframe: true // DESCOMENTA ESTO SI QUIERES VER SOLO LAS LÍNEAS
+        });
+
+        // 3. Carga el modelo
+        powerupLoader.load('X.fbx', (fbx) => {
+            console.log("Modelo de velocidad cargado correctamente"); // Mensaje de control
+
+            fbx.scale.setScalar(0.015); // Ajusta el tamaño si es necesario
+
+            fbx.traverse(c => {
+                if (c.isMesh) {
+                    c.castShadow = true;
+                    c.receiveShadow = true;
+                    c.material = debugMaterial;
+                }
+            });
+
+            // Coordenadas donde quieres los items
+            const positions = [
+                new THREE.Vector3(67, 2, 149),
+                new THREE.Vector3(179, 2, -87),
+                new THREE.Vector3(-266, 2, 7),
+                new THREE.Vector3(-50, 2, 25),
+            ];
+
+            for (const pos of positions) {
+                const clone = fbx.clone();
+                clone.position.copy(pos);
+
+                // Animación opcional: un poco de rotación aleatoria
+                // clone.rotation.y = Math.random() * Math.PI;
+
+                this._scene.add(clone);
+                this._powerups.push(clone);
+            }
+        },
+            // 4. (Opcional) Callback de progreso
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total * 100) + '% cargado');
+            },
+            // 5. Callback de ERROR (Esto te dirá si la ruta está mal)
+            (error) => {
+                console.error('Error al cargar velocidad.fbx:', error);
+            });
+        // -----------------------------------------------------
 
         // Instancia el OrbSpawner
         this._orbSpawner = new OrbSpawner({
             scene: this._scene,
-            platforms: this._platforms
         });
 
-        this._dustSystem = new DustParticleSystem({
+        this._fireSystem = new FireParticleSystem({
             scene: this._scene,
-            count: 1500 // Cantidad de partículas (ajústalo si va lento)
+            count: 200, // Número de partículas
+            // Posición fija que pediste
+            position: new THREE.Vector3(10, 0, 10)
         });
+
+        this._fires = []; // Lista para guardar los fuegos
+
+        const cantidadFuegos = 30; // ¡Pon aquí cuantos quieras!
+        const rangoMapa = 250;     // Que tan dispersos están (ajusta según tu mapa)
+
+        for (let i = 0; i < cantidadFuegos; i++) {
+            // Posición aleatoria (Math.random() va de 0 a 1)
+            // (Math.random() - 0.5) * 2 nos da un número entre -1 y 1
+            const x = (Math.random() - 0.5) * 2 * rangoMapa;
+            const z = (Math.random() - 0.5) * 2 * rangoMapa;
+
+            const fire = new FireParticleSystem({
+                scene: this._scene,
+                count: 100, // Bajamos un poco la cantidad de partículas por fuego para que no se trabe
+                position: new THREE.Vector3(x, 0, z)
+            });
+
+            this._fires.push(fire);
+        }
 
         let light = new THREE.DirectionalLight(0xFFFFFF, 1.0);
         light.position.set(-100, 100, 100);
@@ -670,55 +964,15 @@ class CharacterControllerDemo {
         const controls = new OrbitControls(
             this._camera, this._threejs.domElement);
         controls.target.set(0, 10, 0);
-        controls.enabled = false; // <-- Deshabilitado
         controls.update();
 
-        this._jumpPowerups = []; 
-
-        const jumpLoader = new FBXLoader();
-        jumpLoader.setPath('./Resources/Modelos/Poweups/'); 
-
-        // 1. Creamos el material AZUL brillante
-        const blueMaterial = new THREE.MeshStandardMaterial({
-            color: 0x0000FF, // Color Azul Puro
-            emissive: 0x000033, // Un pequeño brillo propio
-            roughness: 0.1,  // Que sea liso
-            metalness: 0.5   // Que parezca metálico
-        });
-
-        jumpLoader.load('velocidad.fbx', (fbx) => {
-            fbx.scale.setScalar(0.03); 
-            
-            fbx.traverse(c => {
-                if (c.isMesh) {
-                    c.castShadow = true;
-                    c.receiveShadow = true;
-                    
-                    // 2. APLICAMOS EL COLOR AZUL AQUÍ
-                    c.material = blueMaterial; 
-                }
-            });
-
-            // Posiciones (Arriba de las plataformas)
-            const positions = [
-                new THREE.Vector3(0, 4, 135), 
-                new THREE.Vector3(0, 4, 360)  
-            ];
-
-            for (const pos of positions) {
-                const clone = fbx.clone();
-                clone.position.copy(pos);
-                this._scene.add(clone);
-                this._jumpPowerups.push(clone);
-            }
-        });
-
         const loader = new GLTFLoader();
-        loader.setPath('./Resources/Modelos/Mapas/Escenario2/'); // Ruta a la carpeta de tu mapa
-        loader.load('Escenario5.glb', (gltf) => { // Nombre de tu archivo
-            gltf.scene.scale.setScalar(4.5);
+        loader.setPath('./Resources/Modelos/Mapas/Escenario1/'); // Ruta a la carpeta de tu mapa
+        loader.load('Escenario1.glb', (gltf) => { // Nombre de tu archivo
+            gltf.scene.scale.setScalar(6);
             this._scene.add(gltf.scene);
-            gltf.scene.position.set(0, 0, 0);
+
+            gltf.scene.position.set(0, -166.5, 0);
             gltf.scene.traverse(c => {
                 if (c.isMesh) {
                     c.castShadow = true;
@@ -727,93 +981,28 @@ class CharacterControllerDemo {
             });
         });
 
-        const textureLoader = new THREE.TextureLoader();
-        const metalTexture = textureLoader.load('./Resources/Imagenes/Metal.jpg');
-        // Asegúrate de que la textura se repita
-        metalTexture.wrapS = THREE.RepeatWrapping;
-        metalTexture.wrapT = THREE.RepeatWrapping;
-
-
-        // 1. Crear la plataforma inicial (larga en X)
-        const initialPlatformGeo = new THREE.BoxGeometry(80, 2, 50);
-
-        // Clonamos la textura para esta geometría
-        const initialTexture = metalTexture.clone();
-        initialTexture.needsUpdate = true; // Importante al clonar
-        initialTexture.repeat.set(10, 2); // Repetir 10 veces en X (100/10), 2 en Z (20/10)
-
-        const initialPlatformMat = new THREE.MeshStandardMaterial({
-            map: initialTexture
+        const collisionBoxMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00FF00, // Verde brillante
+            wireframe: true
         });
 
-        const initialPlatform = new THREE.Mesh(initialPlatformGeo, initialPlatformMat);
+        const collisionBoxGeometry1 = new THREE.BoxGeometry(3, 30, 3);
+        const collisionBoxMesh1 = new THREE.Mesh(collisionBoxGeometry1, collisionBoxMaterial);
+        collisionBoxMesh1.position.set(-33, 0, 47);
+        this._scene.add(collisionBoxMesh1);
 
-        initialPlatform.position.set(0, 0, 0); // En el origen (altura Y=0)
-        initialPlatform.castShadow = true;
-        initialPlatform.receiveShadow = true;
-        this._scene.add(initialPlatform);
-        this._platforms.push(initialPlatform); // ¡Añadir al array de colisión!
-
-        // 2. Crear las plataformas intermedias
-        const platformGeometry = new THREE.BoxGeometry(20, 2, 20); // Geometría estándar
-
-        const numPlatforms = 14;
-        const spacingZ = 45.0;
-        let lastZ = 0.0; // La Z de la plataforma inicial
-
-        for (let i = 0; i < numPlatforms; i++) {
-
-            const platformTexture = metalTexture.clone();
-            platformTexture.needsUpdate = true;
-            platformTexture.repeat.set(2, 2); // Repetir 2x2 en esta plataforma (20/10)
-            const platformMaterial = new THREE.MeshStandardMaterial({
-                map: platformTexture
-            });
-
-            const platform = new THREE.Mesh(platformGeometry, platformMaterial);
-
-            const newY = 0.0;
-            // Nueva Z basada en la anterior + espaciado
-            const newZ = lastZ + spacingZ;
-
-            platform.position.set(0, newY, newZ);
-
-            lastZ = newZ; // Guardamos la Z
-
-            platform.castShadow = true;
-            platform.receiveShadow = true;
-            this._scene.add(platform);
-            this._platforms.push(platform); // Añadir al array de colisión
-        }
-
-        const finalPlatformGeo = new THREE.BoxGeometry(150, 2, 250);
-
-        const finalTexture = metalTexture.clone();
-        finalTexture.needsUpdate = true;
-        finalTexture.repeat.set(20, 20); // <-- REPETICIÓN AJUSTADA (200/10)
-        const finalPlatformMat = new THREE.MeshStandardMaterial({
-            map: finalTexture
-        });
-
-        const finalPlatform = new THREE.Mesh(finalPlatformGeo, finalPlatformMat);
-
-        finalPlatform.position.set(0, 0.0, lastZ + 150);
-
-        finalPlatform.castShadow = true;
-        finalPlatform.receiveShadow = true;
-        this._scene.add(finalPlatform);
-        this._platforms.push(finalPlatform);
-
+        const collisionBoxGeometry2 = new THREE.BoxGeometry(3, 30, 3);
+        const collisionBoxMesh2 = new THREE.Mesh(collisionBoxGeometry2, collisionBoxMaterial);
+        collisionBoxMesh2.position.set(9, 0, 0);
+        this._scene.add(collisionBoxMesh2);
 
         this._mixers = [];
         this._previousRAF = null;
 
-        // Nuevas variables para el seguimiento de la cámara (TU CÁMARA)
         this._cameraTarget = new THREE.Vector3();
         this._cameraOffset = new THREE.Vector3(0, 6, -15);
 
         this._LoadAnimatedModel();
-
         this._LoadEnemyFBX();
 
         this._temporizador = setInterval(() => {
@@ -838,37 +1027,25 @@ class CharacterControllerDemo {
                 this._TriggerLoss();
                 clearInterval(this._temporizador);
             }
-        }, 1000);
+        }, 500);
 
-        // --- MANEJADOR DE EVENTOS UNIFICADO ---
         document.addEventListener('keydown', (event) => this._onKeyDown(event));
         document.addEventListener('keyup', (event) => this._onKeyUp(event));
 
-        // --- LISTENERS DE LOS BOTONES DEL MENÚ DE PAUSA ---
-        // Los comento temporalmente si no tienes el HTML para ellos
         document.getElementById('jugar-button').addEventListener('click', () => this._togglePause());
         document.getElementById('back-to-menu-button').addEventListener('click', () => this._exitToMenu());
 
         // --- MULTIJUGADOR: Conectar si el usuario eligió ese modo ---
         if (window.isMultiplayer) {
             console.log("🔵 Iniciando modo Multijugador...");
-
-            // ESTO ES LO QUE TIENES AHORA (solo conecta):
-            // this._socket = io(); 
-
-            // CÁMBIALO POR ESTO (para enviar el nombre):
             const myName = window.currentUser ? window.currentUser.username : "Invitado";
             this._socket = io({
                 query: { username: myName }
             });
-
-            this._setupSocketEvents();
+            this._setupSocketEvents(); // Configura qué hacer cuando recibimos datos
         }
 
         this._RAF();
-        // setTimeout(() => {
-        //     this._TriggerDeath();
-        // }, 1000000); // 10 segundos
     }
 
     _LoadEnemyFBX() {
@@ -883,12 +1060,9 @@ class CharacterControllerDemo {
                 }
             });
 
-            fbx.position.set(6, 1, 745); // posición donde estará el enemigo
-            fbx.rotation.y = Math.PI; // Rotación de 180 grados
-
+            fbx.position.set(0, 0, -70); // posición donde estará el enemigo
             this._scene.add(fbx);
 
-            // Guardamos referencias
             this._enemy = fbx;
             this._enemyMixer = new THREE.AnimationMixer(fbx);
             this._enemyAnimations = {};
@@ -899,16 +1073,13 @@ class CharacterControllerDemo {
                 this._enemyAnimations[name] = action;
             };
 
-            // --- Cargar animaciones FBX ---
             const animLoader = new FBXLoader();
             animLoader.setPath('./Resources/Modelos/Enemigo/');
             animLoader.load('Idle.fbx', (a) => { _OnLoad('idle', a); });
             animLoader.load('Dying.fbx', (a) => { _OnLoad('dying', a); });
             animLoader.load('Mutant Punch.fbx', (a) => { _OnLoad('punch', a); });
 
-            // --- Esperar a que las animaciones se carguen ---
             setTimeout(() => {
-                // Reproduce la animación idle en bucle
                 const idleAction = this._enemyAnimations['idle'];
                 if (idleAction) {
                     idleAction.reset().play();
@@ -918,6 +1089,9 @@ class CharacterControllerDemo {
         });
     }
 
+    // ====================================================================
+    // 1. NUEVA FUNCIÓN PARA CHEQUEAR COLISIONES (posición aquí)
+    // ====================================================================
     _CheckCollisions() {
         if (!this._controls || !this._controls._target || !this._orbSpawner) return;
 
@@ -961,75 +1135,74 @@ class CharacterControllerDemo {
         }
     }
 
-    // --- MÉTODO ACTUALIZADO: LÓGICA DE SALTO ---
-    _CheckJumpPowerups() {
-        if (!this._controls || !this._controls._target || !this._jumpPowerups) return;
+    _CheckPowerups() {
+        if (!this._controls || !this._controls._target || !this._powerups) return;
 
         const playerPos = this._controls._target.position;
 
-        for (const powerup of this._jumpPowerups) {
+        // Recorremos cada powerup de la lista
+        for (const powerup of this._powerups) {
+
+            // Si no es visible, ya lo agarramos, pasamos al siguiente
             if (powerup.visible === false) continue;
 
-            // Animación: rotar
+            // 1. Animación: Hacemos que giren todos
             powerup.rotation.y += 0.05;
+            powerup.rotation.z += 0.02;
 
-            // Detección (distancia < 3)
+            // 2. Revisamos distancia
             if (playerPos.distanceTo(powerup.position) < 3.0) {
-                console.log("¡SUPER SALTO AZUL ACTIVADO!");
+                console.log("¡PowerUp de Velocidad obtenido en: " + powerup.position.x + "," + powerup.position.z);
 
-                // 1. Desaparecer el objeto
+                // Ocultar ESTE powerup específico
                 powerup.visible = false;
 
-                // 2. Aumentar el salto (1.8 veces más alto)
-                this._controls._jumpMultiplier = 1.8;
+                // Aplicar velocidad al jugador
+                this._controls._speedMultiplier = 1.5;
 
-                // 3. Sonido
+                // Sonido
                 if (this._sounds && this._sounds['orb']) {
-                     if (this._sounds['orb'].isPlaying) this._sounds['orb'].stop();
-                     this._sounds['orb'].play();
+                    if (this._sounds['orb'].isPlaying) this._sounds['orb'].stop();
+                    this._sounds['orb'].play();
                 }
 
-                // 4. TEMPORIZADOR: 10 SEGUNDOS
-                // 1000 ms = 1 segundo -> 10000 ms = 10 segundos
+                // Temporizador para quitar el efecto (10 segundos)
+                // Nota: Si agarras otro mientras tienes el efecto, el timer anterior 
+                // podría quitarte la velocidad antes de tiempo. Para un sistema simple está bien,
+                // pero si quieres que se reinicie el tiempo, avísame.
                 setTimeout(() => {
-                    console.log("Salto normal restaurado");
-                    if(this._controls) this._controls._jumpMultiplier = 1.0; 
-                }, 10000); 
+                    // Solo quitamos la velocidad si no hemos agarrado otro recientemente 
+                    // (por simplicidad, aquí lo reseteamos directo)
+                    if (this._controls) this._controls._speedMultiplier = 1.0;
+                }, 10000);
             }
         }
     }
 
     // ====================================================================
-    // MANTENEMOS TU LÓGICA DE CÁMARA ORIGINAL
-    // ====================================================================
+
     _UpdateCamera() {
         if (!this._controls._target) {
             return;
         }
 
-        // Posición del objetivo de la cámara (el personaje)
         this._cameraTarget.copy(this._controls._target.position);
-        this._cameraTarget.y += 5; // Ajuste de altura para que la cámara apunte a la cabeza del personaje
+        this._cameraTarget.y += 5;
 
-        // Posición de la cámara detrás del personaje, con la misma rotación
         const tempOffset = this._cameraOffset.clone();
         tempOffset.applyQuaternion(this._controls._target.quaternion);
         tempOffset.add(this._controls._target.position);
 
-        this._camera.position.lerp(tempOffset, 0.1); // Usa lerp para un movimiento más suave
+        this._camera.position.lerp(tempOffset, 0.1);
         this._camera.lookAt(this._cameraTarget);
     }
-    // ====================================================================
-    // FIN DE TU LÓGICA DE CÁMARA
-    // ====================================================================
 
     _LoadAnimatedModel() {
         const params = {
             camera: this._camera,
             scene: this._scene,
-            platforms: this._platforms, // <-- Le pasamos el array de plataformas
             game: this,
-            sounds: this._sounds                  // <-- Le pasamos la instancia del juego
+            sounds: this._sounds
         }
         this._controls = new BasicCharacterController(params);
     }
@@ -1070,8 +1243,6 @@ class CharacterControllerDemo {
             return;
         }
 
-        if (this._isDead) return;
-
         if (event.keyCode === 80) { // 'P'
             if (this._controls && this._controls._target) {
                 const pos = this._controls._target.position;
@@ -1089,7 +1260,7 @@ class CharacterControllerDemo {
     }
 
     _onKeyUp(event) {
-        if (this._isPaused || this._isDead) {
+        if (this._isPaused) {
             return;
         }
 
@@ -1138,35 +1309,59 @@ class CharacterControllerDemo {
     _Step(timeElapsed) {
         const timeElapsedS = timeElapsed * 0.001;
 
-        // Actualizaciones normales
-        if (this._mixers) this._mixers.map(m => m.update(timeElapsedS));
-        if (this._enemyMixer) this._enemyMixer.update(timeElapsed * 0.001);
-        if (this._controls) this._controls.Update(timeElapsedS);
-        if (this._orbSpawner) this._orbSpawner.update(timeElapsedS);
-        if (this._dustSystem) this._dustSystem.update(timeElapsedS); // Nivel 2 usa polvo, no fuego
+        // 1. Actualizar animaciones (Jugador y Enemigo)
+        if (this._mixers) {
+            this._mixers.map(m => m.update(timeElapsedS));
+        }
 
-        // Explosiones
+        if (this._enemyMixer) {
+            this._enemyMixer.update(timeElapsed * 0.001);
+        }
+
+        // 2. Actualizar Lógica del Jugador
+        if (this._controls) {
+            this._controls.Update(timeElapsedS);
+        }
+
+        // 3. Actualizar Orbes
+        if (this._orbSpawner) {
+            this._orbSpawner.update(timeElapsedS);
+        }
+
+        // 4. Actualizar Partículas de Fuego (Estático)
+        if (this._fireSystem) {
+            this._fireSystem.update(timeElapsedS);
+        }
+
+        // 5. Actualizar Explosiones (y eliminar las que terminaron)
         for (let i = this._explosions.length - 1; i >= 0; i--) {
             const explosion = this._explosions[i];
             const isDead = explosion.update(timeElapsedS);
-            if (isDead) this._explosions.splice(i, 1);
+            if (isDead) {
+                this._explosions.splice(i, 1);
+            }
         }
 
-        this._CheckCollisions();
-        this._CheckBossEncounter();
+        // 6. Chequeos de Juego
+        this._CheckCollisions();      // Recolección de orbes
+        this._CheckBossEncounter();   // Jefe final
 
-        this._CheckJumpPowerups();
+        this._CheckPowerups();
 
-        this._UpdateCamera();
+        this._UpdateCamera();         // Mover la cámara
 
-        // --- MULTIJUGADOR: Enviar datos al servidor ---
+        // 7. LÓGICA MULTIJUGADOR (CORREGIDA)
+        // Solo enviamos datos si estamos conectados y el jugador existe
         if (this._socket && this._controls && this._controls._target) {
             const pos = this._controls._target.position;
             const rot = this._controls._target.quaternion;
 
-            // Obtenemos la animación actual de forma segura
+            // --- CORRECCIÓN: Definir la variable antes de usarla ---
+            // Obtenemos el nombre de la animación actual ('idle', 'walk', 'run')
+            // Usamos ?. por seguridad, por si _currentState es null momentáneamente
             const currentAnim = this._controls._stateMachine._currentState?.Name || 'idle';
 
+            // Enviamos los datos al servidor
             this._socket.emit('playerMovement', {
                 x: pos.x,
                 y: pos.y,
@@ -1175,20 +1370,136 @@ class CharacterControllerDemo {
                 anim: currentAnim
             });
         }
-        // ----------------------------------------------
+
+        // 1. Actualizar el temporizador de inmunidad (cooldown)
+        if (this._fireDamageCooldown > 0) {
+            this._fireDamageCooldown -= timeElapsedS;
+        }
+
+        // ... dentro de _Step ...
+
+        // --- ACTUALIZAR TODOS LOS FUEGOS ---
+        if (this._fires) {
+            this._fires.forEach(fire => {
+                fire.update(timeElapsedS);
+            });
+        }
+        // -----------------------------------
+
+        // B) Detectar colisión con CUALQUIER fuego
+        if (this._controls && this._controls._target && this._fires) {
+            const playerPos = this._controls._target.position;
+            let teEstasQuemando = false;
+
+            // Revisamos uno por uno
+            for (const fire of this._fires) {
+                // Si te acercas a menos de 2.5 metros de ESTE fuego
+                if (playerPos.distanceTo(fire.emitterPosition) < 2.5) {
+                    teEstasQuemando = true;
+                    break; // Ya encontramos uno, no hace falta seguir buscando
+                }
+            }
+
+            // C) Aplicar daño si te quemas y no eres inmune
+            if (teEstasQuemando && this._fireDamageCooldown <= 0) {
+
+                // RESTAMOS 2 ORBES DE GOLPE
+                this._orbsCollected -= 2;
+
+                // Verificamos si sobrevivió
+                if (this._orbsCollected > 0) {
+
+                    // SOBREVIVIÓ
+                    console.log("¡Te quemaste! -2 Orbes");
+
+                    // Actualizar UI
+                    const counter = document.getElementById('orbCounter');
+                    if (counter) counter.textContent = `Orbes: ${this._orbsCollected}`;
+                    this._actualizarBarraEnergia();
+
+                    // Sonido de daño (si tienes uno)
+                    // if (this._sounds && this._sounds['hurt']) this._sounds['hurt'].play();
+
+                    // Damos inmunidad temporal
+                    this._fireDamageCooldown = 1.5;
+
+                } else {
+                    // MURIÓ (Tenía 2 orbes o menos)
+                    this._orbsCollected = 0; // Corrección visual para no mostrar negativos
+
+                    // Actualizar UI una última vez antes de morir
+                    const counter = document.getElementById('orbCounter');
+                    if (counter) counter.textContent = `Orbes: 0`;
+                    this._actualizarBarraEnergia();
+
+                    console.log("¡Has muerto quemado!");
+                    this._TriggerLoss();
+                }
+            }
+        }
+
+
+        // 2. Calcular distancia al fuego
+        if (this._fireSystem && this._controls && this._controls._target) {
+            const playerPos = this._controls._target.position;
+
+            // Accedemos a la posición del emisor de partículas
+            const firePos = this._fireSystem.emitterPosition;
+
+            // Si estás a menos de 3 metros del fuego
+            if (playerPos.distanceTo(firePos) < 3.0) {
+
+                // Y si ya pasó el tiempo de inmunidad
+                if (this._fireDamageCooldown <= 0) {
+
+                    // Restar orbe si tienes alguno
+                    if (this._orbsCollected > 0) {
+                        this._orbsCollected--;
+
+                        // Actualizar UI (Texto y Barra)
+                        const counter = document.getElementById('orbCounter');
+                        if (counter) counter.textContent = `Orbes: ${this._orbsCollected}`;
+                        this._actualizarBarraEnergia();
+
+                        // Opcional: Reproducir sonido de golpe si tienes uno cargado
+                        // if (this._sounds && this._sounds['hurt']) this._sounds['hurt'].play();
+                    }
+                    else {
+                        // NO TIENES VIDA (0 Orbes): MUERES
+                        this._TriggerLoss();
+                    }
+
+                    // Reiniciar cooldown (te da 1.5 segundos de inmunidad)
+                    this._fireDamageCooldown = 1.5;
+                }
+            }
+        }
+
     }
 
     //  API
     _TriggerDeath() {
         if (this._isDead) return;
+        this._isDead = true;
 
-        // 1. Ocultar al personaje
         if (this._controls && this._controls._target) {
             this._controls._target.visible = false;
         }
 
-        // 2. Llamar a la pantalla de derrota directamente (sin preguntar nada)
-        this._TriggerLoss();
+        const playerName = prompt("¡Perdiste! Ingresa tu nombre:");
+
+        fetch('http://localhost:3000/score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: playerName, score: this._orbsCollected })
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log('Puntuación guardada:', data);
+                alert(`¡Gracias ${playerName}! Tu puntuación de ${this._orbsCollected} orbes fue guardada.`);
+                window.location.reload(); // reinicia el juego para probar
+            })
+            .catch(err => console.error('Error al guardar la puntuación:', err));
     }
 
     _exitToMenu() {
@@ -1220,9 +1531,9 @@ class CharacterControllerDemo {
         if (this._controls) this._controls._input._keys = {}; // Detener movimiento
     }
 
-    /**
-     * Muestra la pantalla de "Ganaste".
-     */
+    // ==========================================
+    //  NUEVA FUNCIÓN _TriggerWin CON TWITTER
+    // ==========================================
     _TriggerWin() {
         if (this._isDead || this._gameWon) return;
         this._gameWon = true;
@@ -1242,7 +1553,7 @@ class CharacterControllerDemo {
             fetch('http://localhost:3000/score', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, score: this._orbsCollected, level: "Nivel 2" })
+                body: JSON.stringify({ userId, score: this._orbsCollected, level: "Nivel 1" })
             }).catch(err => console.error(err));
         }
 
@@ -1253,10 +1564,25 @@ class CharacterControllerDemo {
             const twitterBtn = document.createElement('button');
             twitterBtn.id = 'btn-share-twitter';
             twitterBtn.innerText = "🏆 Compartir en Twitter";
+
+            // --- ESTILOS DE COLOR ---
             twitterBtn.style.backgroundColor = "#1DA1F2";
             twitterBtn.style.color = "white";
-            twitterBtn.style.marginTop = "10px";
+            twitterBtn.style.border = "2px solid white";
+            twitterBtn.style.borderRadius = "10px"; // Un poco redondeado se ve mejor flotando
+            twitterBtn.style.padding = "10px 20px";
+            twitterBtn.style.fontSize = "1.2rem";
+            twitterBtn.style.fontFamily = "'Impact', sans-serif";
             twitterBtn.style.cursor = "pointer";
+            twitterBtn.style.boxShadow = "3px 3px 5px rgba(0,0,0,0.5)";
+
+            // --- LA CLAVE: POSICIÓN ABSOLUTA (ESQUINA INFERIOR DERECHA) ---
+            twitterBtn.style.position = "absolute";
+            twitterBtn.style.bottom = "30px";  // Separación del suelo
+            twitterBtn.style.right = "30px";   // Separación de la derecha
+            twitterBtn.style.margin = "0";     // Sin márgenes que estorben
+            twitterBtn.style.zIndex = "10000"; // Aseguramos que esté encima de todo
+            // --------------------------------------------------------------
 
             // --- AQUÍ ESTÁ LA DEPURACIÓN ---
             // ... dentro de _TriggerWin ...
@@ -1274,12 +1600,12 @@ class CharacterControllerDemo {
                     // 2. DATOS DEL JUGADOR
                     const nombre = window.currentUser ? window.currentUser.username : "Jugador Invitado";
                     const puntos = this._orbsCollected;
-                    const nivel = "Nivel 2"; // Cambia esto en Nivel 2 y 3
+                    const nivel = "Nivel 1"; // Cambia esto en Nivel 2 y 3
 
                     // 3. LLENAR AUTOMÁTICAMENTE EL MENSAJE
                     // Aquí defines qué dirá el tweet
                     if (postInput) {
-                        postInput.value = `¡He completado el ${nivel}!\n\n👤 Jugador: ${nombre}\n💎 Puntuación: ${puntos} orbes\n\n¿Podrás superarme?`;
+                        postInput.value = `¡He completado el ${nivel}! Dificil\n\n👤 Jugador: ${nombre}\n💎 Puntuación: ${puntos} orbes\n\n¿Podrás superarme?`;
                     }
 
                     // Llenar el campo de usuario (visual)
@@ -1296,8 +1622,8 @@ class CharacterControllerDemo {
     }
 
     /**
-         * Revisa si el jugador está en el área del jefe CON los orbes necesarios.
-         */
+     * Revisa si el jugador está en el área del jefe CON los orbes necesarios.
+     */
     _CheckBossEncounter() {
         // 1. Validaciones básicas (si ya ganamos o perdimos, no hacer nada)
         if (!this._controls || !this._controls._target || this._bossDefeated || this._isDead) {
@@ -1438,34 +1764,44 @@ class CharacterControllerDemo {
             this._addRemotePlayer(info.playerId, info.playerInfo);
         });
 
-        // 3. Alguien se movió (Sincronización de Posición y Animación)
+        // 3. Alguien se movió (AQUÍ ESTÁ LA CORRECCIÓN DE ANIMACIÓN)
         this._socket.on('playerMoved', (info) => {
             const remotePlayer = this._remotePlayers[info.playerId];
 
             if (remotePlayer && remotePlayer.mesh) {
-                // Actualizar Posición
+                // A) Actualizar Posición y Rotación
                 remotePlayer.mesh.position.set(info.x, info.y, info.z);
                 remotePlayer.mesh.quaternion.set(
-                    info.rotation._x, info.rotation._y, info.rotation._z, info.rotation._w
+                    info.rotation._x,
+                    info.rotation._y,
+                    info.rotation._z,
+                    info.rotation._w
                 );
 
-                // Actualizar Animación
+                // B) Actualizar Animación
+                // Verificamos que el jugador tenga acciones cargadas y el servidor mande una animación
                 if (remotePlayer.actions && info.anim) {
+
+                    // Solo cambiamos si la animación es diferente a la actual
                     if (remotePlayer.currentAnim !== info.anim) {
+
                         const newAction = remotePlayer.actions[info.anim];
                         const prevAction = remotePlayer.actions[remotePlayer.currentAnim];
 
                         if (newAction) {
-                            if (prevAction) prevAction.fadeOut(0.2);
-                            newAction.reset().fadeIn(0.2).play();
-                            remotePlayer.currentAnim = info.anim;
+                            if (prevAction) {
+                                prevAction.fadeOut(0.2); // Si hay anterior, la desvanecemos
+                            }
+
+                            newAction.reset().fadeIn(0.2).play(); // Reproducimos la nueva
+                            remotePlayer.currentAnim = info.anim; // Actualizamos el registro
                         }
                     }
                 }
             }
         });
 
-        // 4. Desconexión
+        // 4. Alguien se desconectó
         this._socket.on('playerDisconnected', (id) => {
             if (this._remotePlayers[id]) {
                 this._scene.remove(this._remotePlayers[id].mesh);
@@ -1478,6 +1814,7 @@ class CharacterControllerDemo {
         const loader = new FBXLoader();
         loader.setPath('./Resources/Modelos/Personaje/');
 
+        // 1. Cargar el Modelo
         loader.load('Tilin2.fbx', (fbx) => {
             fbx.scale.setScalar(0.05);
             fbx.traverse(c => { c.castShadow = true; });
@@ -1492,32 +1829,38 @@ class CharacterControllerDemo {
                 fbx.quaternion.set(data.rotation._x, data.rotation._y, data.rotation._z, data.rotation._w);
             }
 
-            // Configurar AnimationMixer
+            // --- SISTEMA DE ANIMACIÓN REMOTA ---
             const mixer = new THREE.AnimationMixer(fbx);
-            this._mixers.push(mixer); // Agregar al array global para que se mueva
+            this._mixers.push(mixer);
 
-            const actions = {};
+            const actions = {}; // Aquí guardaremos las acciones (idle, walk, run)
 
-            // Cargar clips de animación
+            // Función auxiliar para cargar clips
             const loadAnim = (animName, fileName) => {
                 const animLoader = new FBXLoader();
                 animLoader.setPath('./Resources/Modelos/Personaje/');
                 animLoader.load(fileName, (anim) => {
                     const action = mixer.clipAction(anim.animations[0]);
                     actions[animName] = action;
-                    if (animName === 'idle') action.play();
+
+                    // Si es la animación inicial (idle), dale play
+                    if (animName === 'idle') {
+                        action.play();
+                    }
                 });
             };
 
+            // Cargar las 3 animaciones clave
             loadAnim('idle', 'idle.fbx');
             loadAnim('walk', 'Walk.fbx');
             loadAnim('run', 'Run.fbx');
 
+            // Guardamos todo en el objeto del jugador remoto
             this._remotePlayers[id] = {
                 mesh: fbx,
                 mixer: mixer,
                 actions: actions,
-                currentAnim: 'idle'
+                currentAnim: 'idle' // Estado inicial
             };
 
             this._scene.add(fbx);
@@ -1558,6 +1901,152 @@ class CharacterControllerDemo {
         return sprite;
     }
 
+}
+
+class FireParticleSystem {
+
+    constructor(params) {
+        this.scene = params.scene;
+        this.particleCount = params.count || 200;
+        // Esta es la posición fija donde nacerán las partículas
+        this.emitterPosition = params.position || new THREE.Vector3(0, 0, 0);
+
+        this.particles = [];
+        this.geometry = new THREE.BufferGeometry();
+
+        const positions = new Float32Array(this.particleCount * 3);
+        const colors = new Float32Array(this.particleCount * 3);
+        const color = new THREE.Color();
+
+        // Inicializamos cada partícula
+        for (let i = 0; i < this.particleCount; i++) {
+            // Posición inicial (en el centro del emisor)
+            positions[i * 3] = this.emitterPosition.x;
+            positions[i * 3 + 1] = this.emitterPosition.y;
+            positions[i * 3 + 2] = this.emitterPosition.z;
+
+            // Color inicial (blanco/amarillo brillante)
+            color.set(0xFFFFAA);
+            colors[i * 3] = color.r;
+            colors[i * 3 + 1] = color.g;
+            colors[i * 3 + 2] = color.b;
+
+            // Guardamos los datos de "física" para esta partícula
+            this.particles.push({
+                velocity: new THREE.Vector3(
+                    (Math.random() - 0.5) * 1.5, // Velocidad X aleatoria
+                    Math.random() * 4.0 + 2.0,   // Velocidad Y (siempre hacia arriba)
+                    (Math.random() - 0.5) * 1.5  // Velocidad Z aleatoria
+                ),
+                lifetime: Math.random() * 1.5 + 0.5, // Vida de 0.5 a 2.0 segundos
+                initialLifetime: 0
+            });
+            // Asignamos la vida inicial de inmediato
+            this.particles[i].initialLifetime = this.particles[i].lifetime;
+        }
+
+        this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        this.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // 2. Material
+        const textureLoader = new THREE.TextureLoader();
+
+        // Esta es la causa MÁS PROBABLE de una pantalla negra si no existe
+        const particleTexture = textureLoader.load('./Resources/Imagenes/sparkle.png');
+
+        this.material = new THREE.PointsMaterial({
+            map: particleTexture,
+            size: 1.5,
+            sizeAttenuation: true,
+            blending: THREE.AdditiveBlending, // Clave para el efecto de fuego
+            transparent: true,
+            depthWrite: false,
+            vertexColors: true
+        });
+
+        // 3. El objeto THREE.Points
+        this.pointSystem = new THREE.Points(this.geometry, this.material);
+        this.scene.add(this.pointSystem);
+    }
+
+    // Método para "revivir" una partícula que ha muerto
+    _resetParticle(i) {
+        const positions = this.geometry.attributes.position.array;
+        const colors = this.geometry.attributes.color.array;
+        const particle = this.particles[i];
+
+        // 1. Reinicia la posición al centro del emisor (con un leve offset)
+        positions[i * 3] = this.emitterPosition.x + (Math.random() - 0.5) * 0.5;
+        positions[i * 3 + 1] = this.emitterPosition.y + (Math.random() - 0.5) * 0.5;
+        positions[i * 3 + 2] = this.emitterPosition.z + (Math.random() - 0.5) * 0.5;
+
+        // 2. Reinicia el color a amarillo/blanco
+        colors[i * 3] = 1.0;
+        colors[i * 3 + 1] = 1.0;
+        colors[i * 3 + 2] = 0.5 + Math.random() * 0.5;
+
+        // 3. Reinicia la velocidad
+        particle.velocity.set(
+            (Math.random() - 0.5) * 1.5,
+            Math.random() * 4.0 + 2.0, // Hacia arriba
+            (Math.random() - 0.5) * 1.5
+        );
+
+        // 4. Reinicia la vida
+        particle.lifetime = Math.random() * 1.5 + 0.5;
+        particle.initialLifetime = particle.lifetime;
+    }
+
+    // (Este método no lo usaremos por ahora, pero es bueno tenerlo)
+    setEmitterPosition(newPosition) {
+        this.emitterPosition.copy(newPosition);
+    }
+
+    // Bucle de actualización
+    update(timeDelta) {
+        // Si la geometría aún no está lista, no hagas nada
+        if (!this.geometry.attributes.position) {
+            return;
+        }
+
+        const positions = this.geometry.attributes.position.array;
+        const colors = this.geometry.attributes.color.array;
+
+        const color = new THREE.Color();
+        const targetColor = new THREE.Color(0xBB0000); // Color rojo oscuro
+
+        for (let i = 0; i < this.particleCount; i++) {
+            const particle = this.particles[i];
+            particle.lifetime -= timeDelta;
+
+            if (particle.lifetime <= 0) {
+                this._resetParticle(i);
+            }
+
+            const lifePercent = particle.lifetime / particle.initialLifetime;
+
+            // 1. Actualizar Posición
+            positions[i * 3] += particle.velocity.x * timeDelta;
+            positions[i * 3 + 1] += particle.velocity.y * timeDelta;
+            positions[i * 3 + 2] += particle.velocity.z * timeDelta;
+
+            // 2. Actualizar Color (de amarillo a rojo)
+            color.setRGB(
+                colors[i * 3],
+                colors[i * 3 + 1],
+                colors[i * 3 + 2]
+            );
+            color.lerp(targetColor, 1.0 - lifePercent);
+
+            colors[i * 3] = color.r;
+            colors[i * 3 + 1] = color.g;
+            colors[i * 3 + 2] = color.b;
+        }
+
+        // Marcar atributos para actualizar en la GPU
+        this.geometry.attributes.position.needsUpdate = true;
+        this.geometry.attributes.color.needsUpdate = true;
+    }
 }
 
 class ExplosionParticleSystem {
@@ -1692,92 +2181,8 @@ class ExplosionParticleSystem {
     }
 }
 
-/**
- * Sistema de partículas de polvo ambiental.
- * Crea partículas que flotan suavemente en todo el mapa.
- */
-class DustParticleSystem {
-    constructor(params) {
-        this.scene = params.scene;
-        this.count = params.count || 1000; // Cantidad de partículas
 
-        // Define el área que cubrirá el polvo (ajustado a tu Nivel 2)
-        // Tu nivel va de Z=0 a Z=800 aprox.
-        this.bounds = {
-            minX: -100, maxX: 100,
-            minY: -10, maxY: 60,
-            minZ: -50, maxZ: 850
-        };
-
-        this.particlesGeometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(this.count * 3);
-        // Velocidades aleatorias para cada partícula
-        this.velocities = [];
-
-        for (let i = 0; i < this.count; i++) {
-            // Posición inicial aleatoria dentro de los límites
-            positions[i * 3] = THREE.MathUtils.randFloat(this.bounds.minX, this.bounds.maxX);     // x
-            positions[i * 3 + 1] = THREE.MathUtils.randFloat(this.bounds.minY, this.bounds.maxY); // y
-            positions[i * 3 + 2] = THREE.MathUtils.randFloat(this.bounds.minZ, this.bounds.maxZ); // z
-
-            // Velocidad muy suave
-            this.velocities.push({
-                x: (Math.random() - 0.5) * 0.5, // Leve movimiento lateral
-                y: (Math.random() - 0.5) * 0.5, // Leve movimiento vertical
-                z: (Math.random() - 0.5) * 0.5  // Leve movimiento frontal
-            });
-        }
-
-        this.particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        // Usamos una textura simple o la misma sparkle.png (se verá bien pequeña)
-        const textureLoader = new THREE.TextureLoader();
-        const particleTexture = textureLoader.load('./Resources/Imagenes/sparkle.png');
-
-        this.particlesMaterial = new THREE.PointsMaterial({
-            color: 0x00FF00,      // Blanco
-            size: 0.8,            // Muy pequeñas
-            map: particleTexture,
-            transparent: true,
-            opacity: .7,         // Semi-transparentes
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-
-        this.particleSystem = new THREE.Points(this.particlesGeometry, this.particlesMaterial);
-        this.scene.add(this.particleSystem);
-    }
-
-    update(timeInSeconds) {
-        const positions = this.particlesGeometry.attributes.position.array;
-
-        for (let i = 0; i < this.count; i++) {
-            // Actualizar posiciones basado en velocidad
-            positions[i * 3] += this.velocities[i].x * timeInSeconds; // X
-            positions[i * 3 + 1] += this.velocities[i].y * timeInSeconds; // Y
-            positions[i * 3 + 2] += this.velocities[i].z * timeInSeconds; // Z
-
-            // --- LÓGICA DE BUCLE INFINITO (Wrap Around) ---
-            // Si se sale por un lado, aparece por el otro para que nunca se acaben
-
-            // Eje Y (Altura)
-            if (positions[i * 3 + 1] > this.bounds.maxY) positions[i * 3 + 1] = this.bounds.minY;
-            if (positions[i * 3 + 1] < this.bounds.minY) positions[i * 3 + 1] = this.bounds.maxY;
-
-            // Eje X (Ancho)
-            if (positions[i * 3] > this.bounds.maxX) positions[i * 3] = this.bounds.minX;
-            if (positions[i * 3] < this.bounds.minX) positions[i * 3] = this.bounds.maxX;
-
-            // Eje Z (Largo) - Importante para tu nivel largo
-            if (positions[i * 3 + 2] > this.bounds.maxZ) positions[i * 3 + 2] = this.bounds.minZ;
-            if (positions[i * 3 + 2] < this.bounds.minZ) positions[i * 3 + 2] = this.bounds.maxZ;
-        }
-
-        this.particlesGeometry.attributes.position.needsUpdate = true;
-    }
-}
-
-
+// INICIO DEL JUEGO
 let _APP = null;
 
 window.addEventListener('DOMContentLoaded', () => {

@@ -8,20 +8,17 @@ function initSocialLogic() {
     const postInput = document.getElementById('postContent');
     const socialModal = document.getElementById('socialModal');
     const closeSocialModal = document.getElementById('closeSocialModal');
-    const postButton = document.getElementById('post-button'); // Botón del menú principal
+    const postButton = document.getElementById('post-button');
 
-    // --- 1. LÓGICA PARA CERRAR LA VENTANA (LA "X") ---
     if (closeSocialModal) {
-        // Quitamos listeners previos para evitar duplicados (clonando el nodo es un truco rápido, pero mejor usamos onclick directo aquí para asegurar)
         closeSocialModal.onclick = () => {
-            console.log("❌ Click en cerrar modal");
+            console.log(" Click en cerrar modal");
             if (socialModal) socialModal.style.display = 'none';
         };
     } else {
-        console.warn("⚠️ No se encontró el botón de cerrar (id='closeSocialModal')");
+        console.warn(" No se encontró el botón de cerrar (id='closeSocialModal')");
     }
 
-    // --- 2. LÓGICA PARA EL BOTÓN DEL MENÚ PRINCIPAL ---
     if (postButton && socialModal) {
         postButton.onclick = () => {
             console.log("🔘 Click en botón menú principal");
@@ -30,7 +27,7 @@ function initSocialLogic() {
         };
     }
 
-    // --- 3. LÓGICA PARA EL BOTÓN "PUBLICAR" (ENVIAR A TWITTER) ---
+    // enviar a twitter
     if (sendPost) {
         sendPost.onclick = async () => {
             console.log("🚀 Botón Publicar PRESIONADO");
@@ -45,7 +42,6 @@ function initSocialLogic() {
                 return;
             }
 
-            // Deshabilitar para evitar doble envío
             sendPost.disabled = true;
             sendPost.innerText = "Enviando...";
 
@@ -59,13 +55,13 @@ function initSocialLogic() {
                 });
 
                 const data = await res.json();
-                console.log("✅ Respuesta del servidor:", data);
+                console.log(" Respuesta del servidor:", data);
 
                 if (data.success) {
                     if (data.twitterError) {
                         alert("Guardado en el juego, pero hubo un error con Twitter:\n" + data.twitterError);
                     } else {
-                        alert("✅ ¡Publicado en @AbranChill3D con éxito!");
+                        alert(" Publicado con éxito!");
                     }
                     
                     // Cerrar la ventana automáticamente
@@ -79,7 +75,7 @@ function initSocialLogic() {
                 }
 
             } catch (err) {
-                console.error("🔥 Error de conexión:", err);
+                console.error(" Error de conexión:", err);
                 alert("No se pudo conectar con el servidor. Revisa la consola (F12).");
             } finally {
                 // Reactivar botón
@@ -88,7 +84,7 @@ function initSocialLogic() {
             }
         };
     } else {
-        console.error("❌ ERROR CRÍTICO: No se encontró el botón 'sendPost' en el HTML.");
+        console.error(" ERROR CRÍTICO: No se encontró el botón 'sendPost' en el HTML.");
     }
 }
 
